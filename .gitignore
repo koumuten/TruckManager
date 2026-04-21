@@ -52,7 +52,10 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
-/truck_manager/test/static_files
+truck_manager/test/static_files
+truck_manager/test/test_env
+
+truck_manager/test/test_env/cnfg/cuwo-74f73-f779c7ce6ebf.json
 *.env
 
 # https://dart.dev/guides/libraries/private-files
