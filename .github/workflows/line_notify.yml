@@ -1,0 +1,36 @@
+name: Send LINE Notification
+
+on:
+  push:
+    branches:
+      - main # mainブランチへのプッシュをトリガーにします
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.13.8' # ご利用のFlutterのバージョンに合わせてください
+          channel: 'stable'
+
+      - name: Run integration test and generate JSON
+        run: |
+          cd truck_manager
+          flutter test test/integration_test.dart
+        env:
+          LINE_NOTIFY_TOKEN: ${{ secrets.LINE_NOTIFY_TOKEN }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          LINE_TARGET_USER_ID: ${{ secrets.LINE_TARGET_USER_ID }}
+
+      - name: Send LINE Notification
+        run: |
+          JSON_PAYLOAD=$(cat truck_manager/line_notification.json)
+          curl -X POST -H "Authorization: Bearer ${{ secrets.LINE_NOTIFY_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d "$JSON_PAYLOAD" \
+          https://notify-api.line.me/api/notify
