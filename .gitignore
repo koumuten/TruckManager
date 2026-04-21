@@ -52,3 +52,9 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+/truck_manager/test/static_files
+*.env
+
+# https://dart.dev/guides/libraries/private-files
+# Created by `dart pub`
+truck_manager/dart_tool/

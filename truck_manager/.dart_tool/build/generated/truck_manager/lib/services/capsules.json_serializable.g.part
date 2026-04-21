@@ -1,0 +1,52 @@
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+ShiftCapsule _$ShiftCapsuleFromJson(Map<String, dynamic> json) => ShiftCapsule(
+      date:
+          json['date'] == null ? null : DateTime.parse(json['date'] as String),
+      assignment: json['assignment'] as String? ?? "",
+      reserver: json['reserver'] as String? ?? "",
+      eventName: json['eventName'] as String? ?? "",
+    );
+
+Map<String, dynamic> _$ShiftCapsuleToJson(ShiftCapsule instance) =>
+    <String, dynamic>{
+      'date': instance.date.toIso8601String(),
+      'assignment': instance.assignment,
+      'reserver': instance.reserver,
+      'eventName': instance.eventName,
+    };
+
+OrderCapsule _$OrderCapsuleFromJson(Map<String, dynamic> json) => OrderCapsule(
+      state: json['state'] as String? ?? "未振り込み",
+      percentage: json['percentage'] as String? ?? "0%",
+      date: json['date'] as String,
+      price: json['price'] as String? ?? "¥0",
+      objectName: json['objectName'] as String,
+      lastUpdated: json['lastUpdated'] as String? ?? "未更新",
+    );
+
+Map<String, dynamic> _$OrderCapsuleToJson(OrderCapsule instance) =>
+    <String, dynamic>{
+      'state': instance.state,
+      'percentage': instance.percentage,
+      'date': instance.date,
+      'price': instance.price,
+      'objectName': instance.objectName,
+      'lastUpdated': instance.lastUpdated,
+    };
+
+InvoiceCapsule _$InvoiceCapsuleFromJson(Map<String, dynamic> json) =>
+    InvoiceCapsule(
+      date: json['date'] as String,
+      price: json['price'] as String,
+      invoiceImgPath: json['invoiceImgPath'] as String?,
+    );
+
+Map<String, dynamic> _$InvoiceCapsuleToJson(InvoiceCapsule instance) =>
+    <String, dynamic>{
+      'date': instance.date,
+      'price': instance.price,
+      'invoiceImgPath': instance.invoiceImgPath,
+    };

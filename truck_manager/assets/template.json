@@ -1,0 +1,140 @@
+{
+    "type": "carousel",
+    "contents": [
+      {
+        "type": "bubble",
+        "size": "micro",
+        "header": {
+          "type": "box",
+          "layout": "vertical",
+          "contents": [
+            {
+              "type": "text",
+              "text": "{{State}}",
+              "color": "#ffffff",
+              "align": "start",
+              "size": "md",
+              "gravity": "center"
+            },
+            {
+              "type": "text",
+              "text": "{{percentage}}",
+              "color": "#ffffff",
+              "align": "start",
+              "size": "xs",
+              "gravity": "center",
+              "margin": "lg"
+            },
+            {
+              "type": "box",
+              "layout": "vertical",
+              "contents": [
+                {
+                  "type": "box",
+                  "layout": "vertical",
+                  "contents": [
+                    {
+                      "type": "filler"
+                    }
+                  ],
+                  "width": "{{percentage}}",
+                  "backgroundColor": "#0D8186",
+                  "height": "6px"
+                }
+              ],
+              "backgroundColor": "#9FD8E36E",
+              "height": "6px",
+              "margin": "sm"
+            }
+          ],
+          "backgroundColor": "#27ACB2",
+          "paddingTop": "19px",
+          "paddingAll": "12px",
+          "paddingBottom": "16px"
+        },
+        "body": {
+          "type": "box",
+          "layout": "vertical",
+          "contents": [
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "日付"
+                },
+                {
+                  "type": "text",
+                  "text": "{{date}}"
+                }
+              ],
+              "flex": 1
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "金額"
+                },
+                {
+                  "type": "text",
+                  "text": "{{price}}"
+                }
+              ]
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "目的"
+                },
+                {
+                  "type": "text",
+                  "text": "{{Object}}"
+                }
+              ]
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "更新"
+                },
+                {
+                  "type": "text",
+                  "text": "{{Last}}"
+                }
+              ]
+            },
+            {
+              "type": "separator"
+            },
+            {
+              "type": "button",
+              "action": {
+                "type": "uri",
+                "label": "請求書を確認",
+                "uri": "http://linecorp.com/"
+              }
+            }
+          ],
+          "spacing": "md",
+          "paddingAll": "12px"
+        },
+        "styles": {
+          "footer": {
+            "separator": false
+          }
+        }
+      }
+    ]
+  }
+  
+  
