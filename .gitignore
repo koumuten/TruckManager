@@ -55,7 +55,7 @@ nunit-*.xml
 truck_manager/test/static_files
 truck_manager/test/test_env
 
-truck_manager/test/test_env/cnfg/cuwo-74f73-f779c7ce6ebf.json
+truck_manager/test/test_env/cnfg/g_cred.json
 *.env
 
 # https://dart.dev/guides/libraries/private-files

@@ -21,11 +21,12 @@ jobs:
       - name: Run integration test and generate JSON
         run: |
           cd truck_manager
-          flutter test test/integration_test.dart
+          dart run lib/app.dart
         env:
           LINE_NOTIFY_TOKEN: ${{ secrets.LINE_NOTIFY_TOKEN }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
           LINE_TARGET_USER_ID: ${{ secrets.LINE_TARGET_USER_ID }}
+          GOOGLE_SERVICE_CRED:  ${{ secrets.GOOGLE_SERVICE_CRED }}
 
       - name: Send LINE Notification
         run: |
