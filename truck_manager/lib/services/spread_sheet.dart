@@ -11,10 +11,8 @@ class GoogleSheetsService {
 
   GoogleSheetsService._(this.sheetsApi, this.spreadsheetId);
 
-  static Future<GoogleSheetsService> create() async {
+  static Future<GoogleSheetsService> create(String serviceAccountJson) async {
     final spreadsheetIdTmp = await AssetLoader.readAsset("SHIFT_SHEET_ID");
-    final serviceAccountJson =
-        await AssetLoader.readAsset('FIREBASE_SERVICE_ACCOUNT_JSON');
 
     final credentials = ServiceAccountCredentials.fromJson(serviceAccountJson);
 
