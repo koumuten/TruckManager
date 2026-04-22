@@ -23,10 +23,25 @@ jobs:
           cd truck_manager
           dart run lib/app.dart
         env:
+          # ディレクトリ設定 (GitHub Actionsの標準パスを使用)
+          TMP_DIR: ${{ github.workspace }}/tmp
+          FONT_DIR: ${{ github.workspace }}/fonts
+          CONFIG_DIR: ${{ github.workspace }}/config
+
+          # API 認証情報 (先ほどリネームした命名規則を適用)
+          OAUTH_ID: ${{ secrets.OAUTH_ID }}
+          OAUTH_SECRET: ${{ secrets.OAUTH_SECRET }}
+          G_REFRESH_TOKEN: ${{ secrets.G_REFRESH_TOKEN }}
+
+          # 外部サービス連携
           LINE_NOTIFY_TOKEN: ${{ secrets.LINE_NOTIFY_TOKEN }}
-          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
           LINE_TARGET_USER_ID: ${{ secrets.LINE_TARGET_USER_ID }}
-          GOOGLE_SERVICE_CRED:  ${{ secrets.GOOGLE_SERVICE_CRED }}
+
+          # スプレッドシート設定
+          SHIFT_SHEET_ID: ${{ secrets.SHIFT_SHEET_ID }}
+
+          # ワークフロー制御用
+          TARGET: "${{ secrets.TARGET }}"
 
       - name: Send LINE Notification
         run: |
