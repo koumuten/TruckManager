@@ -3,6 +3,7 @@ import 'dart:io' as io;
 import 'package:googleapis/storage/v1.dart' as storage; // firebasestorage ではなく storage
 import 'package:googleapis/firestore/v1.dart';
 import 'package:googleapis_auth/auth_io.dart';
+import 'package:truck_manager/services/notify.dart';
 
 class FirebaseService {
   final FirestoreApi? api;
@@ -72,8 +73,10 @@ class FirebaseService {
       
       print('アップロード成功: $downloadUrl');
       return downloadUrl;
-    } catch (e) {
+    } catch (e,stackTrace) {
       print('Firebase Storage Upload Error: $e');
+      await GASNotifyService.notifyErrorToGas(
+          "Faital Error in AppService: \n $e \n Stack: $stackTrace");
       rethrow;
     }
   }

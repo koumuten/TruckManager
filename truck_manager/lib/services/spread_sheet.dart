@@ -2,6 +2,7 @@ import 'package:googleapis/sheets/v4.dart' as sheets;
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:truck_manager/services/asset_loader.dart';
 import 'package:truck_manager/services/capsules.dart';
+import 'package:truck_manager/services/notify.dart';
 
 class GoogleSheetsService {
   sheets.SheetsApi? sheetsApi;
@@ -66,8 +67,10 @@ class GoogleSheetsService {
       if (shift == null) {
         print('$targetDateStr のデータは存在しませんでした。');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('エラーが発生しました: $e');
+      await GASNotifyService.notifyErrorToGas(
+          "Faital Error in AppService: \n $e \n Stack: $stackTrace");
     }
 
     return shift;

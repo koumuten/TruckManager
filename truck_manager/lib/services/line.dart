@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:truck_manager/services/capsules.dart';
 import 'package:truck_manager/services/asset_loader.dart';
+import 'package:truck_manager/services/notify.dart';
 
 class LineNotifyService {
   final String channelAccessToken;
@@ -80,13 +81,17 @@ class LineNotifyService {
           print('LINE通知が正常に送信されました。');
         } else {
           print('LINE送信エラー: ${response.statusCode} - ${response.body}');
+          await GASNotifyService.notifyErrorToGas(
+          "Faital Error in LineNotifyService : \n${response.statusCode}\n${response.body}");
         }
         return response.statusCode.toString();
       }else{
         return jsonEncode(body);
       }
-    } catch (e) {
+    } catch (e,stackTrace) {
       print('LINEサービス内でエラーが発生しました: $e');
+      await GASNotifyService.notifyErrorToGas(
+          "Faital Error in AppService: \n $e \n Stack: $stackTrace");
     }
     return "";
   }
