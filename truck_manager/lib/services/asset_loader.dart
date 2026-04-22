@@ -1,18 +1,18 @@
-
 import 'dart:io';
 import 'dart:convert';
 import 'package:dotenv/dotenv.dart' as dotenv;
 
 class AssetLoader {
-
-  /// テスト環境で実行されているかを同期的にチェックする
-  static bool isDebug() {
-    return Platform.environment.containsKey('IS_TEST_ENVIRONMENT');
+  /// テスト環境で実行されているかをチェックする
+  static Future<bool> isDebug() async {
+    final envJudge = Platform.environment.containsKey('IS_TEST_ENVIRONMENT');
+    final fileJudge = await File('.env').exists();
+    return envJudge || fileJudge;
   }
 
-  static Future<void> ReadAllVal() async{
-    final List <String> envfiles = [];
-    if (await File('.env').exists()){
+  static Future<void> ReadAllVal() async {
+    final List<String> envfiles = [];
+    if (await File('.env').exists()) {
       envfiles.add('.env');
       print("Find .env file");
     }
@@ -30,11 +30,12 @@ class AssetLoader {
       }
       return await file.readAsString();
     } else {
-      final List <String> envfiles = [];
-      if (await File('.env').exists()){
+      final List<String> envfiles = [];
+      if (await File('.env').exists()) {
         envfiles.add('.env');
       }
-      final env = dotenv.DotEnv(includePlatformEnvironment: true)..load(envfiles);
+      final env = dotenv.DotEnv(includePlatformEnvironment: true)
+        ..load(envfiles);
       final value = env[keyOrPath];
       if (value == null || value.isEmpty) {
         throw Exception('Environment variable NOT FOUND: $keyOrPath');
