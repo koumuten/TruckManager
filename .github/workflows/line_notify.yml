@@ -21,6 +21,8 @@ jobs:
       - name: Run integration test and generate JSON
         run: |
           cd truck_manager
+          mkdir -p $TMP_DIR $FONT_DIR $CONFIG_DIR
+          dart pub get
           dart run lib/app.dart
         env:
           # ディレクトリ設定 (GitHub Actionsの標準パスを使用)
