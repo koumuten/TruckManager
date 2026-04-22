@@ -34,6 +34,7 @@ jobs:
           OAUTH_ID: ${{ secrets.OAUTH_ID }}
           OAUTH_SECRET: ${{ secrets.OAUTH_SECRET }}
           G_REFRESH_TOKEN: ${{ secrets.G_REFRESH_TOKEN }}
+          GOOGLE_SERVICE_CRED: ${{secrets.GOOGLE_SERVICE_CRED}}
 
           # 外部サービス連携
           LINE_NOTIFY_TOKEN: ${{ secrets.LINE_NOTIFY_TOKEN }}
