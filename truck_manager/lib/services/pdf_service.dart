@@ -1,4 +1,3 @@
-
 import 'dart:io';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -15,22 +14,27 @@ class PdfService {
     return PdfService._();
   }
 
-  Future<InvoiceCapsule> processToJpgWithWatermark(
-      File sourcePdf, ShiftCapsule shift) async {
-
+  Future<InvoiceCapsule> ExtractInvoiceCapsule(File sourcePdf) async {
     // 1. まず pdftotext でテキストを抽出
     String text = await _extractTextWithPdfToText(sourcePdf);
 
     // 2. 抽出結果から InvoiceCapsule を生成
     InvoiceCapsule invoice = InvoiceCapsule.fromPdfText(text);
 
+    print("price : ${invoice.totalAmount}");
+
     // 3. 抽出が失敗していたら（金額が0円なら）、Geminiで再挑戦
-    if (invoice.isExtractionInvalid) {
+    if (invoice.isExtractionInvalid || invoice.totalAmount < 1000) {
       print("pdftotext failed. Retrying with Gemini...");
       text = await _extractTextWithGemini(sourcePdf);
       invoice = InvoiceCapsule.fromPdfText(text);
     }
 
+    return invoice;
+  }
+
+  Future<InvoiceCapsule> processToJpgWithWatermark(
+      File sourcePdf, ShiftCapsule shift, InvoiceCapsule invoice) async {
     // 4. 外部コマンド pdftoppm でJPGに変換
     final tmpDir = await AssetLoader.readAsset("TMP_DIR");
     final outputJpgBase =
@@ -102,7 +106,7 @@ class PdfService {
       final pdfBase64 = base64Encode(pdfBytes);
 
       final url = Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=$apiKey');
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent');
 
       final requestBody = {
         "contents": [
@@ -122,7 +126,10 @@ class PdfService {
 
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          "x-goog-api-key": "$apiKey",
+          'Content-Type': 'application/json'
+        },
         body: jsonEncode(requestBody),
       );
 

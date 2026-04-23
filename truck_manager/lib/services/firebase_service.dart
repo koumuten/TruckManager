@@ -15,7 +15,7 @@ class FirebaseStorageService implements StorageService {
     final String clientSecret = await AssetLoader.readAsset("OAUTH_SECRET");
     final String refreshToken = await AssetLoader.readAsset("G_REFRESH_TOKEN");
     // Firebaseのバケット名をアセットから取得するようにします
-    final String projectId = await AssetLoader.readAsset("TARGET");
+    final String projectId = await AssetLoader.readAsset("PROJECT_ID");
 
     final id = ClientId(clientId, clientSecret);
     final scopes = [storage.StorageApi.cloudPlatformScope];

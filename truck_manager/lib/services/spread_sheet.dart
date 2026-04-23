@@ -5,57 +5,76 @@ import 'package:truck_manager/services/asset_loader.dart';
 import 'package:truck_manager/services/capsules.dart';
 
 class SpreadSheetService {
-  final SheetsApi _sheetsApi;
-  final String _spreadsheetId;
+  SheetsApi? sheetsApi;
 
-  SpreadSheetService(this._sheetsApi, this._spreadsheetId);
+  String spreadsheetId;
+
+  SpreadSheetService._(this.sheetsApi, this.spreadsheetId);
 
   static Future<SpreadSheetService> create() async {
-    final credentialsJson = await AssetLoader.readAsset('GCP_SA_KEY');
-    final credentials =
-        ServiceAccountCredentials.fromJson(jsonDecode(credentialsJson));
-    final client = await clientViaServiceAccount(
-        credentials, [SheetsApi.spreadsheetsScope]);
-    final sheetsApi = SheetsApi(client);
-    final spreadsheetId = await AssetLoader.readAsset('SPREAD_SHEET_ID');
-    return SpreadSheetService(sheetsApi, spreadsheetId);
+    final spreadsheetIdTmp = await AssetLoader.readAsset("SHIFT_SHEET_ID");
+    String serviceAccountJson;
+    if (await AssetLoader.isDebug()) {
+      serviceAccountJson =
+          await AssetLoader.readAsset('./test/test_env/cnfg/g_cred.json');
+    } else {
+      serviceAccountJson = await AssetLoader.readAsset('GOOGLE_SERVICE_CRED');
+    }
+    final credentials = ServiceAccountCredentials.fromJson(serviceAccountJson);
+
+    // スプレッドシート読み書き用のスコープを指定
+    final scopes = [SheetsApi.spreadsheetsScope];
+    final authClient = await clientViaServiceAccount(credentials, scopes);
+
+    final sheetsApiTmp = SheetsApi(authClient);
+
+    return SpreadSheetService._(sheetsApiTmp, spreadsheetIdTmp);
   }
 
-  Future<ShiftCapsule?> getShiftByInvoiceId(String invoiceId) async {
+  Future<ShiftCapsule?> retriveTruckData(DateTime date) async {
+    if (sheetsApi == null) throw Exception('APIが初期化されていません。');
+
+    ShiftCapsule? shift;
+
+    //日調君の範囲指定 (シート名がyyyymmの0埋めなし)
+    final range = '${date.year}${date.month}!A:I';
+
+    final targetDateStr = '${date.year}/${date.month}/${date.day}';
     try {
-      final range = 'A2:I'; // 検索範囲
-      final result =
-          await _sheetsApi.spreadsheets.values.get(_spreadsheetId, range);
-      final rows = result.values;
+      final response =
+          await sheetsApi!.spreadsheets.values.get(spreadsheetId, range);
+      final rows = response.values;
 
-      if (rows != null) {
-        for (final row in rows) {
-          if (row.length > 8 && row[8] == invoiceId) {
-            String date = '';
-            if (row.isNotEmpty && row[0] is String) {
-              final dateParts = "${row[0]}".split('/');
-              if (dateParts?.length == 3) {
-                final year = int.parse(dateParts![0]);
-                final month =
-                    int.parse(dateParts[1]).toString().padLeft(2, '0');
-                final day = int.parse(dateParts[2]).toString().padLeft(2, '0');
-                date = '$year-$month-$day';
-              }
-            }
+      if (rows == null || rows.isEmpty) {
+        print('シート"${date.year}${date.month}"がありません。');
+        return ShiftCapsule();
+      }
 
-            return ShiftCapsule(
-              date: date,
-              assignment: row.length > 8 ? row[8].toString() : '',
-              reserver: row.length > 7 ? row[7].toString() : '',
-              eventName: row.length > 2 ? row[2].toString() : '',
-            );
-          }
+      // 3. ループで探索
+
+      for (int i = 0; i < rows.length; i++) {
+        final row = rows[i];
+        if (row.isEmpty) continue;
+
+        // A列(インデックス0)に日付が入っていると仮定
+        final cellDateStr = row[0].toString();
+
+        if (cellDateStr == targetDateStr) {
+          shift = ShiftCapsule();
+          shift.date = "${date.year}/${date.month}/${date.day}";
+          shift.assignment = row.length > 8 ? row[8].toString() : '';
+          shift.reserver = row.length > 7 ? row[7].toString() : '';
+          shift.eventName = row.length > 2 ? row[2].toString() : '';
         }
       }
-      return null;
+
+      if (shift == null) {
+        print('$targetDateStr のデータは存在しませんでした。');
+      }
     } catch (e) {
-      print('Error getting shift by invoice ID: $e');
-      return null;
+      print('エラーが発生しました: $e');
     }
+
+    return shift;
   }
 }

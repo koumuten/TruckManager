@@ -25,7 +25,7 @@ class LineNotifyService {
   String _safeValue(String? value) => (value == null || value.isEmpty) ? ' ' : value;
 
   /// OrderCapsuleのリストを受け取って、LINEへカルーセル形式で送信する
-  Future<String> sendOrderNotifications(List<OrderCapsule> orders, {bool isDebug = false}) async {
+  Future<String> sendOrderNotifications(List<OrderCapsule> orders) async {
     if (channelAccessToken.isEmpty || targetUserId.isEmpty) {
       throw Exception('LINEの認証情報（環境変数）が不足しています。');
     }
@@ -89,6 +89,8 @@ class LineNotifyService {
           await GASNotifyService.notifyErrorToGas(
           "Faital Error in LineNotifyService : \n${response.statusCode}\n${response.body}");
         }
+
+        print(jsonEncode(body));
         return response.statusCode.toString();
       }else{
         return jsonEncode(body);
