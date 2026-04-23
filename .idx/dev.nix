@@ -11,6 +11,7 @@
     pkgs.unzip
     pkgs.dart
     pkgs.flutter
+    pkgs.poppler_utils
   ];
 
   # Sets environment variables in the workspace

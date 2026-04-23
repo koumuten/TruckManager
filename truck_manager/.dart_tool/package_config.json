@@ -21,7 +21,7 @@
     },
     {
       "name": "archive",
-      "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/archive-4.0.9",
+      "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/archive-3.6.1",
       "packageUri": "lib/",
       "languageVersion": "3.0"
     },
@@ -116,6 +116,12 @@
       "languageVersion": "2.19"
     },
     {
+      "name": "clock",
+      "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/clock-1.1.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
       "name": "code_builder",
       "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/code_builder-4.10.0",
       "packageUri": "lib/",
@@ -147,7 +153,7 @@
     },
     {
       "name": "dart_pdf_reader",
-      "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/dart_pdf_reader-0.1.6",
+      "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/dart_pdf_reader-0.5.1",
       "packageUri": "lib/",
       "languageVersion": "3.0"
     },
@@ -159,15 +165,9 @@
     },
     {
       "name": "dotenv",
-      "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/dotenv-4.2.0",
+      "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/dotenv-3.0.0",
       "packageUri": "lib/",
-      "languageVersion": "2.16"
-    },
-    {
-      "name": "ffi",
-      "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/ffi-2.1.0",
-      "packageUri": "lib/",
-      "languageVersion": "3.0"
+      "languageVersion": "2.12"
     },
     {
       "name": "file",
@@ -195,7 +195,7 @@
     },
     {
       "name": "googleapis",
-      "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/googleapis-13.1.0",
+      "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/googleapis-11.4.0",
       "packageUri": "lib/",
       "languageVersion": "3.0"
     },
@@ -231,7 +231,13 @@
     },
     {
       "name": "image",
-      "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/image-4.8.0",
+      "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/image-4.3.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.15"
+    },
+    {
+      "name": "intl",
+      "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/intl-0.19.0",
       "packageUri": "lib/",
       "languageVersion": "3.0"
     },
@@ -338,12 +344,6 @@
       "languageVersion": "2.12"
     },
     {
-      "name": "posix",
-      "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/posix-6.5.0",
-      "packageUri": "lib/",
-      "languageVersion": "3.0"
-    },
-    {
       "name": "pub_semver",
       "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/pub_semver-2.1.4",
       "packageUri": "lib/",
@@ -414,12 +414,6 @@
       "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/source_span-1.10.2",
       "packageUri": "lib/",
       "languageVersion": "3.1"
-    },
-    {
-      "name": "sprintf",
-      "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/sprintf-7.0.0",
-      "packageUri": "lib/",
-      "languageVersion": "2.12"
     },
     {
       "name": "stack_trace",
@@ -527,10 +521,10 @@
       "name": "truck_manager",
       "rootUri": "../",
       "packageUri": "lib/",
-      "languageVersion": "3.1"
+      "languageVersion": "3.0"
     }
   ],
-  "generated": "2026-04-21T06:28:51.310161Z",
+  "generated": "2026-04-23T02:28:45.896687Z",
   "generator": "pub",
-  "generatorVersion": "3.1.4"
+  "generatorVersion": "3.1.3"
 }

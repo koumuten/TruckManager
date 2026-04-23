@@ -1,142 +1,42 @@
+
+import 'dart:async';
 import 'dart:io';
-import 'package:truck_manager/services/firebase_service.dart';
-import 'package:truck_manager/services/mail.dart';
-import 'package:truck_manager/services/spread_sheet.dart';
+
 import 'package:truck_manager/services/pdf_service.dart';
+import 'package:truck_manager/services/firestore_service.dart';
 import 'package:truck_manager/services/line.dart';
-import 'package:truck_manager/services/capsules.dart';
 import 'package:truck_manager/services/notify.dart';
+import 'package:truck_manager/services/capsules.dart';
+import 'package:truck_manager/services/gdrive_service.dart';
 
 class AppService {
-  final FirebaseService _firebase;
-  final GmailService _gmail;
-  final GoogleSheetsService _sheets;
   final PdfService _pdf;
+  final GDriveService _drive;
+  final FirestoreService _firestore;
   final LineNotifyService _line;
-  final String tmpDir;
 
-  // コンストラクタで依存性を注入
-  AppService({
-    required FirebaseService firebase,
-    required GmailService gmail,
-    required GoogleSheetsService sheets,
-    required PdfService pdf,
-    required LineNotifyService line,
-    required this.tmpDir,
-  })  : _firebase = firebase,
-        _gmail = gmail,
-        _sheets = sheets,
-        _pdf = pdf,
-        _line = line;
+  AppService(this._pdf, this._drive, this._firestore, this._line);
 
-  Future<String> runInvoiceSyncWorkflow({
-    required String targetSubject,
-    bool isDebug = false,
-  }) async {
-    try {
-      print('=== 請求書同期ワークフローを開始します ===');
+  Future<void> runInvoiceSyncWorkflow() async {
+    // Notionへの依存を削除したため、このワークフローは現在機能しません。
+    // 請求書データ取得の新しい起点を定義する必要があります。
+    print("Invoice sync workflow is currently disabled due to NotionService removal.");
+    
+    // TODO: 新しいデータソースから請求書情報を取得する処理を実装する
 
-      // サービスの初期化はコンストラクタで行われるため、ここでは不要
+    // ダミーの実行例（削除予定）
+    // await runConsolidateInvoicesForLine();
+  }
 
-      final query = 'subject:"$targetSubject"';
-      final messages = await _gmail.fetchMessageList(query);
+  Future<void> runConsolidateInvoicesForLine() async {
+    // Notionへの依存を削除したため、このワークフローは現在機能しません。
+    print("Consolidate invoices for LINE is currently disabled due to NotionService removal.");
 
-      if (messages.isEmpty) {
-        print('処理対象の新着メールはありません。');
-        return "";
-      }
+    // TODO: 新しいデータソースから未払い注文を取得する処理を実装する
+    final List<OrderCapsule> lineNotifications = [];
 
-      List<OrderCapsule> processedOrders = [];
-
-      for (var msg in messages) {
-        final detail = await _gmail.getMessageDetails(msg.id!);
-        final parts = detail.payload?.parts ?? [];
-
-        for (var part in parts) {
-          if (part.mimeType == 'application/pdf' &&
-              part.body?.attachmentId != null) {
-            final bytes =
-                await _gmail.fetchAttachment(msg.id!, part.body!.attachmentId!);
-
-            final tempDir = await Directory(tmpDir).createTemp('invoice_');
-            final pdfFile = await File('${tempDir.path}/${part.filename}')
-                .writeAsBytes(bytes);
-
-            final String pdfText = await _pdf.extractTextFromPdf(pdfFile);
-            final InvoiceCapsule tempInvoice =
-                InvoiceCapsule.fromPdfText(pdfText);
-
-            DateTime targetDate;
-            try {
-              targetDate = DateTime.parse(tempInvoice.date);
-            } catch (e, stackTrace) {
-              await GASNotifyService.notifyErrorToGas("""
-              Non Faital Error in AppService: 
-              Error detail : Faild to parse date ${tempInvoice.date} \n
-              Alt method : Using current date\n 
-              $e \n Stack: $stackTrace""");
-              targetDate = DateTime.now();
-            }
-
-            final ShiftCapsule shiftData =
-                await _sheets.retriveTruckData(targetDate) ??
-                    ShiftCapsule(date: targetDate, assignment: "未割り当て");
-
-            final InvoiceCapsule finalInvoice =
-                await _pdf.processToJpgWithWatermark(pdfFile, shiftData);
-
-            if (finalInvoice.invoiceImgPath == null){
-              throw Exception('画像の生成に失敗しました。');
-            }
-            final File imgFile = File(finalInvoice.invoiceImgPath!);
-
-            final storagePath =
-                'invoices/${finalInvoice.date}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-            final String downloadUrl = await _firebase.uploadFile(
-              storagePath: storagePath,
-              file: imgFile,
-            );
-
-            final order = OrderCapsule.fromAggregatedData(
-              shift: shiftData,
-              invoice: finalInvoice,
-              statusState: '未振り込み',
-            );
-
-            await _firebase.saveDocument(
-              collectionPath: 'orders',
-              docId: '${finalInvoice.date}_${msg.id}',
-              data: {
-                ...order.toJson(),
-                'imageUrl': downloadUrl,
-                'createdAt': DateTime.now().toUtc().toIso8601String(),
-              },
-            );
-
-            processedOrders.add(order);
-            await tempDir.delete(recursive: true);
-          }
-        }
-
-        if (!isDebug) {
-          await _gmail.markAsRead(msg.id!);
-          print('メール(ID: ${msg.id}) を既読にしました。');
-        }
-      }
-
-      if (processedOrders.isNotEmpty) {
-        return await _line.sendOrderNotifications(processedOrders,
-            isDebug: isDebug);
-      }
-
-      print('===ワークフローが正常に完了しました (${processedOrders.length}件)===');
-    } catch (e, stackTrace) {
-      print('AppService エラー: $e');
-      await GASNotifyService.notifyErrorToGas(
-          "Faital Error in AppService: \n $e \n Stack: $stackTrace");
-      rethrow;
+    if (lineNotifications.isNotEmpty) {
+      await _line.sendOrderNotifications(lineNotifications);
     }
-    return "";
   }
 }

@@ -1,109 +1,87 @@
-
-import 'package:googleapis/gmail/v1.dart' as gmail;
+import 'dart:io';
 import 'package:test/test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:truck_manager/services/firebase_service.dart';
-import 'package:truck_manager/services/mail.dart';
-import 'package:truck_manager/services/spread_sheet.dart';
-import 'package:truck_manager/services/pdf_service.dart';
-import 'package:truck_manager/services/line.dart';
 import 'package:truck_manager/app.dart';
 import 'package:truck_manager/services/capsules.dart';
+import 'package:truck_manager/services/firestore_service.dart';
+import 'package:truck_manager/services/gdrive_service.dart';
+import 'package:truck_manager/services/notify.dart';
+import 'package:truck_manager/services/pdf_service.dart';
+import 'package:truck_manager/services/strage.dart';
 
-import 'app_test.mocks.dart';
+class MockFirestoreService extends Mock implements FirestoreService {}
+class MockGDriveService extends Mock implements GDriveService {}
+class MockStorageService extends Mock implements StorageService {}
+class MockPdfService extends Mock implements PdfService {}
+class MockFile extends Mock implements File {}
 
-// モックを生成するクラスを指定
-@GenerateMocks([
-  FirebaseService,
-  GmailService,
-  GoogleSheetsService,
-  PdfService,
-  LineNotifyService
-])
 void main() {
-  
-  late MockFirebaseService mockFirebaseService;
-  late MockGmailService mockGmailService;
-  late MockGoogleSheetsService mockGoogleSheetsService;
-  late MockPdfService mockPdfService;
-  late MockLineNotifyService mockLineNotifyService;
-  late AppService appService;
+  group('App', () {
+    late App app;
+    late MockFirestoreService mockFirestoreService;
+    late MockGDriveService mockGDriveService;
+    late MockStorageService mockStorageService;
+    late MockPdfService mockPdfService;
+    late MockNotifyService mockNotifyService;
 
-  setUp(() {
-    mockFirebaseService = MockFirebaseService();
-    mockGmailService = MockGmailService();
-    mockGoogleSheetsService = MockGoogleSheetsService();
-    mockPdfService = MockPdfService();
-    mockLineNotifyService = MockLineNotifyService();
+    setUp(() {
+      mockFirestoreService = MockFirestoreService();
+      mockGDriveService = MockGDriveService();
+      mockStorageService = MockStorageService();
+      mockPdfService = MockPdfService();
+      mockNotifyService = MockNotifyService();
 
-    appService = AppService(
-      firebase: mockFirebaseService,
-      gmail: mockGmailService,
-      sheets: mockGoogleSheetsService,
-      pdf: mockPdfService,
-      line: mockLineNotifyService,
-      tmpDir: "/test/test_env/tmp"
-    );
-  });
-
-  group('AppService', () {
-    test('runInvoiceSyncWorkflow should complete without errors when no new emails', () async {
-      when(mockGmailService.fetchMessageList(any)).thenAnswer((_) async => []);
-
-      await appService.runInvoiceSyncWorkflow(targetSubject: 'test');
-
-      verify(mockGmailService.fetchMessageList(any)).called(1);
-      verifyNever(mockGmailService.getMessageDetails(any));
+      app = App(
+        db: mockFirestoreService,
+        drive: mockGDriveService,
+        storage: mockStorageService,
+        pdf: mockPdfService,
+        notify: mockNotifyService,
+      );
     });
 
-    test('should process email with PDF attachment correctly', () async {
-      // 1. Setup Mocks
-      final message = gmail.Message()..id = 'test_msg_id';
-      final messageDetail = gmail.Message()
-        ..payload = (gmail.MessagePart()
-          ..parts = [
-            gmail.MessagePart()
-              ..mimeType = 'application/pdf'
-              ..filename = 'invoice.pdf'
-              ..body = (gmail.MessagePartBody()..attachmentId = 'test_attachment_id')
-          ]);
+    test('run should execute without errors', () async {
+      // Setup mocks
+      final user = User(id: 'testId', name: 'Test User', email: 'test@example.com');
+      when(mockFirestoreService.getUsers()).thenAnswer((_) async => [user]);
+      when(mockGDriveService.checkNewFiles(any)).thenAnswer((_) async => []);
 
-      when(mockGmailService.fetchMessageList(any)).thenAnswer((_) async => [message]);
-      when(mockGmailService.getMessageDetails(message.id!)).thenAnswer((_) async => messageDetail);
-      when(mockGmailService.fetchAttachment(message.id!, 'test_attachment_id')).thenAnswer((_) async => [1, 2, 3]);
-      when(mockGmailService.markAsRead(message.id!)).thenAnswer((_) async => Future.value());
+      // Execute
+      await app.run(null);
 
-      final pdfText = '発行日: 2023/01/15\nお支払い総合計: 10,000円'; // Regexにマッチするテキスト
-      when(mockPdfService.extractTextFromPdf(any)).thenAnswer((_) async => pdfText);
+      // Verify interactions
+      verify(mockFirestoreService.getUsers()).called(1);
+      verify(mockGDriveService.checkNewFiles(any)).called(1);
+    });
+
+    test('run should handle new files and process them', () async {
+      final user = User(id: 'testId', name: 'Test User', email: 'test@example.com');
+      final mockPdfFile = MockFile();
+      final invoiceCapsule = InvoiceCapsule(invoiceId: 'inv1');
+
+      when(mockFirestoreService.getUsers()).thenAnswer((_) async => [user]);
+      when(mockGDriveService.checkNewFiles(any)).thenAnswer((_) async => [mockPdfFile]);
+      when(mockPdfFile.path).thenReturn('dummy.pdf');
+      when(mockStorageService.uploadFile(
+        localPath: anyNamed('localPath'),
+        remotePath: anyNamed('remotePath'),
+      )).thenAnswer((_) async => 'http://dummy.url/invoice.jpg');
       
-      final shiftCapsule = ShiftCapsule(date: DateTime(2023, 1, 15), assignment: 'Truck A', eventName: 'Test Event');
-      when(mockGoogleSheetsService.retriveTruckData(any)).thenAnswer((_) async => shiftCapsule);
+      when(mockPdfService.processToJpgWithWatermark(any, any))
+          .thenAnswer((_) async => invoiceCapsule);
 
-      final invoiceCapsule = InvoiceCapsule(date: '2023-01-15', price: '¥10,000', invoiceImgPath: '/tmp/invoice.jpg'); // totalAmount -> price
-      when(mockPdfService.processToJpgWithWatermark(any, any)).thenAnswer((_) async => invoiceCapsule);
-      
-      final downloadUrl = 'http://example.com/invoice.jpg';
-      when(mockFirebaseService.uploadFile(storagePath: anyNamed('storagePath'), file: anyNamed('file'))).thenAnswer((_) async => downloadUrl);
-      when(mockFirebaseService.saveDocument(collectionPath: anyNamed('collectionPath'), docId: anyNamed('docId'), data: anyNamed('data'))).thenAnswer((_) async => 'success_id');
-      
-      when(mockLineNotifyService.sendOrderNotifications(any)).thenAnswer((_) async => Future.value());
+      // Execute
+      await app.run(null);
 
-      // 2. Run workflow
-      await appService.runInvoiceSyncWorkflow(targetSubject: 'test');
-
-      // 3. Verify
-      verify(mockGmailService.fetchMessageList(any)).called(1);
-      verify(mockGmailService.getMessageDetails(message.id!)).called(1);
-      verify(mockGmailService.fetchAttachment(message.id!, 'test_attachment_id')).called(1);
-      verify(mockPdfService.extractTextFromPdf(any)).called(1);
-      verify(mockGoogleSheetsService.retriveTruckData(any)).called(1);
+      // Verify
       verify(mockPdfService.processToJpgWithWatermark(any, any)).called(1);
-      verify(mockFirebaseService.uploadFile(storagePath: anyNamed('storagePath'), file: anyNamed('file'))).called(1);
-      final captured = verify(mockFirebaseService.saveDocument(collectionPath: 'orders', docId: anyNamed('docId'), data: captureAnyNamed('data'))).captured;
-      expect(captured.first['eventName'], 'Test Event'); // Verify data passed to firestore
-      verify(mockGmailService.markAsRead(message.id!)).called(1);
-      verify(mockLineNotifyService.sendOrderNotifications(any)).called(1);
+      verify(mockStorageService.uploadFile(
+        localPath: anyNamed('localPath'),
+        remotePath: anyNamed('remotePath'),
+      )).called(1);
+      verify(mockFirestoreService.saveInvoice(any)).called(1);
+      verify(mockNotifyService.sendNotify(any, any)).called(1);
     });
+
   });
 }

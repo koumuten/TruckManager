@@ -9,7 +9,13 @@ void main() async {
   final id = ClientId(clientId, clientSecret);
 
   // 必要な権限 (Gmailの読み書き)
-  final scopes = ['https://www.googleapis.com/auth/gmail.modify'];
+  final scopes = [
+    'https://www.googleapis.com/auth/gmail.modify',
+    "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/drive",
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/datastore"
+  ];
 
   try {
     final client = await clientViaUserConsentManual(id, scopes, (url) async {

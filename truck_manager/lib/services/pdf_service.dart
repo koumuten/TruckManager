@@ -1,117 +1,143 @@
+
 import 'dart:io';
+import 'dart:convert';
 import 'dart:typed_data';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:dart_pdf_reader/dart_pdf_reader.dart';
+import 'package:http/http.dart' as http;
+import 'package:image/image.dart' as img;
 import 'package:truck_manager/services/asset_loader.dart';
 import 'package:truck_manager/services/capsules.dart';
 import 'package:path/path.dart' as path;
-import 'package:http/http.dart' as http;
 
 class PdfService {
-  final Uint8List japaneseFont; // TTFの生データ
+  PdfService._();
 
-  PdfService._(this.japaneseFont);
-
-  /// 外部から呼ぶ初期化メソッド
   static Future<PdfService> create() async {
-    final fontData = await _fetchFontData();
-    return PdfService._(fontData);
+    return PdfService._();
   }
 
-  /// メイン処理：PDF解析 → 文字追記 → JPG変換 → テキストデータと JPG アップロード
-  Future<InvoiceCapsule> processToJpgWithWatermark(File sourcePdf, ShiftCapsule shift) async {
-    // 1. テキストを抽出
-    final text = await extractTextFromPdf(sourcePdf);
+  Future<InvoiceCapsule> processToJpgWithWatermark(
+      File sourcePdf, ShiftCapsule shift) async {
+
+    // 1. まず pdftotext でテキストを抽出
+    String text = await _extractTextWithPdfToText(sourcePdf);
+
+    // 2. 抽出結果から InvoiceCapsule を生成
     InvoiceCapsule invoice = InvoiceCapsule.fromPdfText(text);
 
-    // 2. PDFに文字を焼き付ける (imageパッケージではなくpdfパッケージを使用)
-    final watermarkedPdfBytes = await _addTextToPdf(sourcePdf, shift);
-    
-    final tmpDir = await AssetLoader.readAsset("TMP_DIR");
-    final tempPdfPath = '$tmpDir/temp_${DateTime.now().millisecondsSinceEpoch}.pdf';
-    await File(tempPdfPath).writeAsBytes(watermarkedPdfBytes);
+    // 3. 抽出が失敗していたら（金額が0円なら）、Geminiで再挑戦
+    if (invoice.isExtractionInvalid) {
+      print("pdftotext failed. Retrying with Gemini...");
+      text = await _extractTextWithGemini(sourcePdf);
+      invoice = InvoiceCapsule.fromPdfText(text);
+    }
 
-    // 3. 外部コマンド pdftoppm でJPGに変換
-    final outputJpgBase = '$tmpDir/edited_${DateTime.now().millisecondsSinceEpoch}';
+    // 4. 外部コマンド pdftoppm でJPGに変換
+    final tmpDir = await AssetLoader.readAsset("TMP_DIR");
+    final outputJpgBase =
+        path.join(tmpDir, 'edited_${DateTime.now().millisecondsSinceEpoch}');
+    final outputJpgPath = '$outputJpgBase.jpg';
+
     final result = await Process.run('pdftoppm', [
       '-jpeg',
       '-singlefile',
-      '-r', '150', // 解像度設定
-      tempPdfPath,
+      '-r',
+      '150',
+      sourcePdf.path,
       outputJpgBase,
     ]);
 
     if (result.exitCode != 0) {
-      throw Exception("PDFの画像変換に失敗しました: ${result.stderr}");
+      print('pdftoppm stdout: ${result.stdout}');
+      print('pdftoppm stderr: ${result.stderr}');
+      throw Exception("PDF to JPG conversion failed: ${result.stderr}");
     }
 
-    invoice.invoiceImgPath = '$outputJpgBase.jpg';
-    
-    // 一時PDFは削除
-    await File(tempPdfPath).delete();
-    
+    // 5. JPGにウォーターマークを追加
+    final watermarkedJpgBytes =
+        await _addWatermarkToJpg(File(outputJpgPath), shift);
+    await File(outputJpgPath).writeAsBytes(watermarkedJpgBytes);
+
+    invoice.invoiceImgPath = outputJpgPath;
     return invoice;
   }
 
-  /// PDFの上にShiftcapsuleの情報を記載する
-  Future<List<int>> _addTextToPdf(File sourcePdf, ShiftCapsule shift) async {
-    final pdf = pw.Document();
-    final ttf = pw.Font.ttf(japaneseFont.buffer.asByteData());
-    final watermark = '担当: ${shift.assignment}\n予約: ${shift.reserver}\n${shift.eventName}';
-    pdf.addPage(
-      pw.Page(
-        build: (pw.Context context) => pw.Stack(
-          children: [
-            pw.Align(
-              alignment: pw.Alignment.bottomRight,
-              child: pw.Padding(
-                padding: const pw.EdgeInsets.all(20),
-                child: pw.Text(
-                  watermark,
-                  style: pw.TextStyle(font: ttf, fontSize: 20, color: PdfColor.fromHex("#000000")),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-    return pdf.save();
-  }
+  Future<Uint8List> _addWatermarkToJpg(File jpgFile, ShiftCapsule shift) async {
+    final imageBytes = await jpgFile.readAsBytes();
+    final image = img.decodeImage(imageBytes);
 
-  /// PDFからテキスト抽出 (dart_pdf_reader)
-  Future<String> extractTextFromPdf(File pdfFile) async {
-    final bytes = await pdfFile.readAsBytes();
-    final parser = PDFParser(ByteStream(bytes));
-    final document = await parser.parse();
-    final catalog = await document.catalog;
-    final pages = await catalog.getPages();
-    final page = pages.getPageAtIndex(0);
-    
-    return page.toString(); 
-  }
-
-  /// フォントデータの取得ロジック
-  static Future<Uint8List> _fetchFontData() async {
-    final fontDir = Directory(await AssetLoader.readAsset("FONT_DIR"));
-    if (!await fontDir.exists()) await fontDir.create(recursive: true);
-
-    final String fontPath = path.join(fontDir.path, 'font.ttf');
-    final file = File(fontPath);
-
-    if (await file.exists()) {
-      return await file.readAsBytes();
+    if (image == null) {
+      throw Exception("Could not decode JPG image.");
     }
 
-    const fontUrl = "https://github.com/google/fonts/raw/main/ofl/notosansjp/NotoSansJP%5Bwght%5D.ttf";
-    final response = await http.get(Uri.parse(fontUrl));
-    
-    if (response.statusCode == 200) {
-      await file.writeAsBytes(response.bodyBytes);
-      return response.bodyBytes;
-    } else {
-      throw Exception('Font download failed');
+    final watermark =
+        'Assigned: ${shift.assignment} Reserver: ${shift.reserver} Event: ${shift.eventName}';
+
+    img.drawString(
+      image,
+      watermark,
+      font: img.arial24,
+      x: (image.width - (watermark.length * 12)) - 20,
+      y: image.height - 40,
+      color: img.ColorRgb8(0, 0, 0),
+    );
+
+    return Uint8List.fromList(img.encodeJpg(image));
+  }
+
+  Future<String> _extractTextWithPdfToText(File pdfFile) async {
+    final result = await Process.run('pdftotext', [pdfFile.path, '-']);
+    if (result.exitCode != 0) {
+      print("pdftotext stderr: ${result.stderr}");
+      return "";
+    }
+    return result.stdout as String;
+  }
+
+  Future<String> _extractTextWithGemini(File pdfFile) async {
+    try {
+      final apiKey = await AssetLoader.readAsset('GEMINI_API_KEY');
+      if (apiKey.isEmpty) throw Exception("GEMINI_API_KEY is not set.");
+
+      final pdfBytes = await pdfFile.readAsBytes();
+      final pdfBase64 = base64Encode(pdfBytes);
+
+      final url = Uri.parse(
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=$apiKey');
+
+      final requestBody = {
+        "contents": [
+          {
+            "parts": [
+              {"text": "このPDFファイルから日本語のテキストをすべて抽出して、プレーンテキスト形式で返してください。"},
+              {
+                "inline_data": {
+                  "mime_type": "application/pdf",
+                  "data": pdfBase64
+                }
+              }
+            ]
+          }
+        ]
+      };
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        final responseBody = jsonDecode(response.body);
+        final extractedText =
+            responseBody['candidates'][0]['content']['parts'][0]['text'];
+        return extractedText as String;
+      } else {
+        print("Gemini API error: ${response.statusCode} - ${response.body}");
+        return "";
+      }
+    } catch (e) {
+      print("Error calling Gemini API: $e");
+      return "";
     }
   }
 }

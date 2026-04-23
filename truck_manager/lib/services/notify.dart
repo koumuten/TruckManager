@@ -11,7 +11,9 @@ class GASNotifyService {
 
       await http.get(url);
     } catch (e) {
-      print("GASへの通知自体に失敗しました: $e");
+      if (await AssetLoader.isDebug() == false) {
+        print("GASへの通知自体に失敗しました: $e");
+      }
     }
   }
 }

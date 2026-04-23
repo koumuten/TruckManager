@@ -21,6 +21,9 @@ class LineNotifyService {
     return LineNotifyService._(channelAccessTokenTmp, targetUserIdTmp);
   }
 
+  /// 値が空またはnullの場合に半角スペースを返すヘルパー関数
+  String _safeValue(String? value) => (value == null || value.isEmpty) ? ' ' : value;
+
   /// OrderCapsuleのリストを受け取って、LINEへカルーセル形式で送信する
   Future<String> sendOrderNotifications(List<OrderCapsule> orders, {bool isDebug = false}) async {
     if (channelAccessToken.isEmpty || targetUserId.isEmpty) {
@@ -41,12 +44,14 @@ class LineNotifyService {
         String replaced = bubbleBaseStr;
 
         // OrderCapsule のプロパティを使って、テンプレートの {{変数}} を置換
-        replaced = replaced.replaceAll('{{State}}', order.state);
-        replaced = replaced.replaceAll('{{percentage}}', order.percentage);
-        replaced = replaced.replaceAll('{{date}}', order.date);
-        replaced = replaced.replaceAll('{{price}}', order.price);
-        replaced = replaced.replaceAll('{{Object}}', order.objectName);
-        replaced = replaced.replaceAll('{{Last}}', order.lastUpdated);
+        // _safeValue を使って空文字を防ぐ
+        replaced = replaced.replaceAll('{{State}}', _safeValue(order.state));
+        replaced = replaced.replaceAll('{{percentage}}', _safeValue(order.percentage));
+        replaced = replaced.replaceAll('{{date}}', _safeValue(order.date));
+        replaced = replaced.replaceAll('{{price}}', _safeValue(order.price));
+        replaced = replaced.replaceAll('{{Object}}', _safeValue(order.objectName));
+        replaced = replaced.replaceAll('{{Last}}', _safeValue(order.lastUpdated));
+        replaced = replaced.replaceAll('{{url}}', _safeValue(order.url));
 
         return jsonDecode(replaced) as Map<String, dynamic>;
       }).toList();
@@ -67,7 +72,7 @@ class LineNotifyService {
       };
 
       // 4. 送信実行
-      if (!isDebug) {
+      if (true) {
         final response = await http.post(
           Uri.parse('https://api.line.me/v2/bot/message/push'),
           headers: {
