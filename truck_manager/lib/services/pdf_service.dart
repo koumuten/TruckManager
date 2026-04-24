@@ -74,7 +74,7 @@ class PdfService {
     }
 
     final watermark =
-        'Assigned: ${shift.assignment}\nReserver: ${shift.reserver}\nEvent: ${shift.eventName}';
+        'Assigned: ${shift.assignment} \n Reserver: ${shift.reserver} \n Event: ${shift.eventName}';
 
     final fontDir = await AssetLoader.readAsset("FONT_DIR");
     final fontFile = File('$fontDir/japanese_font.zip').readAsBytesSync();
