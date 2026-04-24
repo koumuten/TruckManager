@@ -29,10 +29,8 @@ jobs:
           if [ ! -f "$FONT_DIR/japanese_font.zip" ]; then
             echo "Bitmap font not found. Generating from TTF..."
             
-            npm install -g font-bmfont-cli
+            npm install -g font-bmfont
             
-            mkdir -p temp_font
-            curl -L "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansJP/NotoSansJP-Regular.ttf" -o temp_font/font.ttf# 2. TTFフォントのダウンロード
             mkdir -p temp_font
             curl -L "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansJP/NotoSansJP-Regular.ttf" -o temp_font/font.ttf
             
