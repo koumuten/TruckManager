@@ -32,7 +32,7 @@ jobs:
             npm install msdf-bmfont-xml -g
             
             mkdir -p temp_font
-            curl -L "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansJP/NotoSansJP-Regular.ttf" -o temp_font/font.ttf
+            curl -L "https://raw.githubusercontent.com/notofonts/notofonts.github.io/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Black.ttf" -o temp_font/font.ttf
             curl -l "https://gist.githubusercontent.com/kgsi/ed2f1c5696a2211c1fd1e1e198c96ee4/raw/118bb818cffe159eb4e906f82980465cd0b0021e/japanese_full.txt" -o charset.txt
             msdf-bmfont -f xml -i charset.txt -s 24 temp_font/font.ttf
             
