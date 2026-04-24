@@ -36,7 +36,9 @@ jobs:
             curl -l "https://gist.githubusercontent.com/kgsi/ed2f1c5696a2211c1fd1e1e198c96ee4/raw/118bb818cffe159eb4e906f82980465cd0b0021e/japanese_full.txt" -o charset.txt
             msdf-bmfont -f xml -i charset.txt -s 24 temp_font/font.ttf
             
-            zip -j $FONT_DIR/japanese_font.zip font.fnt font.png
+            ls temp_font
+
+            zip -j $FONT_DIR/japanese_font.zip temp_font/font.fnt temp_font/font.png
             
             echo "Successfully generated $FONT_DIR/japanese_font.zip"
           else
