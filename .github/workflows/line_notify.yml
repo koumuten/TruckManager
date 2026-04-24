@@ -3,7 +3,7 @@ name: Send LINE Notification
 on:
   push:
     branches:
-      - main # mainブランチへのプッシュをトリガーにします
+      - main
 
 jobs:
   notify:
@@ -15,13 +15,37 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y poppler-utils
+          sudo apt-get install -y poppler-utils zip # zipを追加
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.13.8' # ご利用のFlutterのバージョンに合わせてください
+          flutter-version: '3.13.8'
           channel: 'stable'
+
+      - name: Generate Bitmap Font if missing
+        run: |
+          mkdir -p $FONT_DIR
+          if [ ! -f "$FONT_DIR/japanese_font.zip" ]; then
+            echo "Bitmap font not found. Generating from TTF..."
+            
+            npm install -g font-bmfont-cli
+            
+            mkdir -p temp_font
+            curl -L "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansJP/NotoSansJP-Regular.ttf" -o temp_font/font.ttf# 2. TTFフォントのダウンロード
+            mkdir -p temp_font
+            curl -L "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansJP/NotoSansJP-Regular.ttf" -o temp_font/font.ttf
+            
+            font-bmfont -f xml -i charset.txt -s 24 -t 2048 temp_font/font.ttf
+            
+            zip -j $FONT_DIR/japanese_font.zip font.fnt font.png
+            
+            echo "Successfully generated $FONT_DIR/japanese_font.zip"
+          else
+            echo "Bitmap font already exists. Skipping generation."
+          fi
+        env:
+          FONT_DIR: ${{ github.workspace }}/fonts
 
       - name: Run integration test and generate JSON
         run: |
@@ -30,26 +54,24 @@ jobs:
           dart pub get
           dart run lib/app.dart
         env:
-          # ディレクトリ設定 (GitHub Actionsの標準パスを使用)
           TMP_DIR: ${{ github.workspace }}/tmp
           FONT_DIR: ${{ github.workspace }}/fonts
           CONFIG_DIR: ${{ github.workspace }}/config
 
-          # API 認証情報 (先ほどリネームした命名規則を適用)
           OAUTH_ID: ${{ secrets.OAUTH_ID }}
           OAUTH_SECRET: ${{ secrets.OAUTH_SECRET }}
           G_REFRESH_TOKEN: ${{ secrets.G_REFRESH_TOKEN }}
           GOOGLE_SERVICE_CRED: ${{secrets.GOOGLE_SERVICE_CRED}}
 
-          # 外部サービス連携
           LINE_NOTIFY_TOKEN: ${{ secrets.LINE_NOTIFY_TOKEN }}
           LINE_TARGET_USER_ID: ${{ secrets.LINE_TARGET_USER_ID }}
 
-          # スプレッドシート設定
           SHIFT_SHEET_ID: ${{ secrets.SHIFT_SHEET_ID }}
 
-          # ワークフロー制御用
           TARGET: "${{ secrets.TARGET }}"
 
-          #エラー時対応用
           GAS_WEB_HOOK: ${{ secrets.GAS_WEB_HOOK }}
+
+          GDRIVE_UPLOAD_FOLDER_ID : ${{ secrets.GDRIVE_UPLOAD_FOLDER_ID }}
+          GEMINI_API_KEY : ${{ secrets.GEMINI_API_KEY }}
+          PROJECT_ID : ${{ secrets.PROJECT_ID }}

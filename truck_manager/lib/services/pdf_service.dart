@@ -74,12 +74,18 @@ class PdfService {
     }
 
     final watermark =
-        'Assigned: ${shift.assignment} Reserver: ${shift.reserver} Event: ${shift.eventName}';
+        'Assigned: ${shift.assignment}\nReserver: ${shift.reserver}\nEvent: ${shift.eventName}';
+
+    final fontDir = await AssetLoader.readAsset("FONT_DIR");
+    final fontFile = File('$fontDir/japanese_font.zip').readAsBytesSync();
+    final font = img.BitmapFont.fromZip(fontFile);
+
+    print(watermark);
 
     img.drawString(
       image,
       watermark,
-      font: img.arial24,
+      font: font,
       x: (image.width - (watermark.length * 12)) - 20,
       y: image.height - 40,
       color: img.ColorRgb8(0, 0, 0),

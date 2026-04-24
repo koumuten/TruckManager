@@ -13,7 +13,7 @@ dependencies:
   args: ^2.4.2
   json_annotation: ^4.8.1
   pdf: ^3.10.6
-  image: ^4.0.17
+  image: ^4.2.0
   path: ^1.8.3
   archive: ^3.4.1
   mockito: ^5.4.2
