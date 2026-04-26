@@ -68,14 +68,25 @@ class PdfService {
 
   Future<Uint8List> _addWatermarkToJpg(
       File jpgFile, ShiftCapsule shift, InvoiceCapsule invoice) async {
+    final watermark = [
+      '担当: ${shift.assignment}',
+      '予約: ${shift.reserver}',
+      'イベント: ${shift.eventName}',
+      '金額: ¥${invoice.totalAmount}'
+    ];
+
+    //フォント設定
     final fontDir = await AssetLoader.readAsset("FONT_DIR");
     final ttfPath = '${fontDir}/font.ttf';
     if (await File(ttfPath).exists() != true) {
       final fontUrl = await AssetLoader.readAsset("FONT_URL");
-      RetriveService.downloadFile(fontUrl, ttfPath);
+      await RetriveService.downloadFile(fontUrl, ttfPath);
     }
-    final rawText =
-        '${shift.assignment}${shift.reserver}${shift.eventName}${invoice.totalAmount}担当予約イベント金額¥: ';
+
+    String rawText = "";
+    for (var s in watermark) {
+      rawText = "$rawText$s";
+    }
     final uniqueChars = rawText.split('').toSet().join(''); // 重複削除
 
     final charsetFile = await File('${fontDir}/charset.txt').create();
@@ -125,13 +136,6 @@ class PdfService {
     final imageBytes = await jpgFile.readAsBytes();
     final image = img.decodeImage(imageBytes);
     if (image == null) throw Exception("Decode failed");
-
-    final watermark = [
-      '担当: ${shift.assignment}',
-      '予約: ${shift.reserver}',
-      'イベント: ${shift.eventName}',
-      '金額: ¥${invoice.totalAmount}'
-    ];
 
     for (var i = 0; i < watermark.length; i++) {
       img.drawString(
