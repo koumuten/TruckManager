@@ -12,18 +12,19 @@ class OrderCapsule {
   String objectName;
   String lastUpdated;
   String url;
+  String reserver;
   final String id;
 
-  OrderCapsule({
-    this.state = '',
-    this.percentage = '',
-    this.date = '',
-    this.price = '',
-    this.objectName = '',
-    this.lastUpdated = '',
-    this.url = '',
-    this.id = '',
-  });
+  OrderCapsule(
+      {this.state = '',
+      this.percentage = '',
+      this.date = '',
+      this.price = '',
+      this.objectName = '',
+      this.lastUpdated = '',
+      this.url = '',
+      this.id = '',
+      this.reserver = ''});
 
   Map<String, dynamic> toJson() {
     return {
@@ -54,13 +55,13 @@ class OrderCapsule {
     String displayState = statusState == 'unpaid' ? '未振り込み' : statusState;
 
     return OrderCapsule(
-      state: displayState, // 変換したステータス
-      percentage: "0%", // 未払いなので固定で0%
-      date: invoice.invoiceDate, // 請求書側の発行日を採用
-      price: invoice.totalAmount.toString(), // 請求書側の抽出金額を採用
-      objectName: shift.eventName, // 運搬タスク側の「練習目的」を採用
-      lastUpdated: "今日",
-    );
+        state: displayState, // 変換したステータス
+        percentage: "0%", // 未払いなので固定で0%
+        date: invoice.invoiceDate, // 請求書側の発行日を採用
+        price: invoice.totalAmount.toString(), // 請求書側の抽出金額を採用
+        objectName: shift.eventName, // 運搬タスク側の「練習目的」を採用
+        lastUpdated: "今日",
+        reserver: shift.reserver);
   }
 }
 

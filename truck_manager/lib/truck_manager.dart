@@ -141,6 +141,7 @@ class AppService {
               }
               order.url = imgUrl;
               await _line.sendOrderNotifications([order]);
+
             } catch (e, stackTrace) {
               print('Error processing attachment for email ${message.id}: $e');
               print(stackTrace);

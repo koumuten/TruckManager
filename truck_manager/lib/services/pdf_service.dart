@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
 import 'package:truck_manager/services/asset_loader.dart';
 import 'package:truck_manager/services/capsules.dart';
+import 'package:truck_manager/services/download.dart';
 import 'package:path/path.dart' as path;
 
 class PdfService {
@@ -58,38 +59,92 @@ class PdfService {
 
     // 5. JPGにウォーターマークを追加
     final watermarkedJpgBytes =
-        await _addWatermarkToJpg(File(outputJpgPath), shift);
+        await _addWatermarkToJpg(File(outputJpgPath), shift, invoice);
     await File(outputJpgPath).writeAsBytes(watermarkedJpgBytes);
 
     invoice.invoiceImgPath = outputJpgPath;
     return invoice;
   }
 
-  Future<Uint8List> _addWatermarkToJpg(File jpgFile, ShiftCapsule shift) async {
-    final imageBytes = await jpgFile.readAsBytes();
-    final image = img.decodeImage(imageBytes);
+  Future<Uint8List> _addWatermarkToJpg(
+      File jpgFile, ShiftCapsule shift, InvoiceCapsule invoice) async {
+    final fontDir = await AssetLoader.readAsset("FONT_DIR");
+    final ttfPath = '${fontDir}/font.ttf';
+    if (await File(ttfPath).exists() != true) {
+      final fontUrl = await AssetLoader.readAsset("FONT_URL");
+      RetriveService.downloadFile(fontUrl, ttfPath);
+    }
+    final rawText =
+        '${shift.assignment}${shift.reserver}${shift.eventName}${invoice.totalAmount}担当予約イベント金額¥: ';
+    final uniqueChars = rawText.split('').toSet().join(''); // 重複削除
 
-    if (image == null) {
-      throw Exception("Could not decode JPG image.");
+    final charsetFile = await File('${fontDir}/charset.txt').create();
+    await charsetFile.writeAsString(uniqueChars);
+    ProcessResult? result;
+    // 2. シェルスクリプトを実行してフォント生成
+    for (var i = 0; i < 2; i++) {
+      try {
+        result = await Process.run('msdf-bmfont', [
+          "-f", "xml",
+          '-i', charsetFile.path,
+          '-s', '32', // 文字サイズ
+          '-t', 'sdf',
+          ttfPath, // 元となるTTFのパス
+          '-o', '${fontDir}/font.fnt'
+        ]);
+      } catch (e) {
+        if (i == 1) {
+          rethrow;
+        }
+        print("installing msdf-bmfont-xml...");
+        await Process.run("npm", ["install", "msdf-bmfont-xml"]);
+        result = await Process.run("which", ["msdf-bmfont"]);
+        print("msdf-bmfont-xml : ${result.stdout}");
+        print("font.ttf : ${await File('${fontDir}/font.ttf').exists()}");
+        print("charset : ${await File(charsetFile.path).exists()}");
+      }
     }
 
-    final watermark =
-        'Assigned: ${shift.assignment} \n Reserver: ${shift.reserver} \n Event: ${shift.eventName}';
+    if (result == null || result.exitCode != 0) {
+      throw Exception(
+          "Font generation failed: ${result?.stderr ?? "result is null"}");
+    }
 
-    final fontDir = await AssetLoader.readAsset("FONT_DIR");
-    final fontFile = File('$fontDir/japanese_font.zip').readAsBytesSync();
-    final font = img.BitmapFont.fromZip(fontFile);
+    await Process.run('zip', [
+      '-j',
+      '${fontDir}/font.zip',
+      '${fontDir}/font.fnt',
+      '${fontDir}/font.png'
+    ]);
 
-    print(watermark);
+    // ビットマップフォントとして読み込み
 
-    img.drawString(
-      image,
-      watermark,
-      font: font,
-      x: (image.width - (watermark.length * 12)) - 20,
-      y: image.height - 40,
-      color: img.ColorRgb8(0, 0, 0),
-    );
+    final zip = await File("${fontDir}/font.zip").readAsBytes();
+    final font = img.BitmapFont.fromZip(zip);
+    // 5. 画像描画処理
+    final imageBytes = await jpgFile.readAsBytes();
+    final image = img.decodeImage(imageBytes);
+    if (image == null) throw Exception("Decode failed");
+
+    final watermark = [
+      '担当: ${shift.assignment}',
+      '予約: ${shift.reserver}',
+      'イベント: ${shift.eventName}',
+      '金額: ¥${invoice.totalAmount}'
+    ];
+
+    for (var i = 0; i < watermark.length; i++) {
+      img.drawString(
+        image,
+        watermark[i],
+        font: font,
+        x: (image.width / 2).toInt(),
+        y: image.height - 150 + (i * 40),
+        color: img.ColorRgb8(255, 255, 255),
+      );
+    }
+
+    await File('${fontDir}/font.zip').delete();
 
     return Uint8List.fromList(img.encodeJpg(image));
   }

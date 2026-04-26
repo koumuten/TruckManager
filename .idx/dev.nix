@@ -12,6 +12,9 @@
     pkgs.dart
     pkgs.flutter
     pkgs.poppler_utils
+    pkgs.nodejs_20
+    pkgs.curl
+    pkgs.zip
   ];
 
   # Sets environment variables in the workspace
@@ -24,30 +27,12 @@
       "Dart-Code.flutter"
     ];
 
-    # Enable previews
-    previews = {
-      enable = true;
-      previews = {
-        web = {
-          # Example: run "flutter run -d chrome --web-hostname 0.0.0.0 --web-port $PORT"
-          command = ["flutter" "run" "-d" "chrome" "--web-hostname" "0.0.0.0" "--web-port" "$PORT"];
-          manager = "flutter";
-        };
-        android = {
-          # Example: run "flutter run -d android"
-          command = ["flutter" "run" "-d" "android"];
-          manager = "flutter";
-        };
-      };
-    };
 
     # Workspace lifecycle hooks
     workspace = {
       # Runs when a workspace is first created
-      onCreate = {
-        # Example: install JS dependencies from NPM
-        # npm-install = "npm install";
-      };
+onCreate = {
+    };
       # Runs when the workspace is (re)started
       onStart = {
         # Example: start a continuous build process

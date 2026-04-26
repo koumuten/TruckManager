@@ -1,4 +1,3 @@
-
 import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -22,7 +21,8 @@ class LineNotifyService {
   }
 
   /// 値が空またはnullの場合に半角スペースを返すヘルパー関数
-  String _safeValue(String? value) => (value == null || value.isEmpty) ? ' ' : value;
+  String _safeValue(String? value) =>
+      (value == null || value.isEmpty) ? ' ' : value;
 
   /// OrderCapsuleのリストを受け取って、LINEへカルーセル形式で送信する
   Future<String> sendOrderNotifications(List<OrderCapsule> orders) async {
@@ -46,12 +46,17 @@ class LineNotifyService {
         // OrderCapsule のプロパティを使って、テンプレートの {{変数}} を置換
         // _safeValue を使って空文字を防ぐ
         replaced = replaced.replaceAll('{{State}}', _safeValue(order.state));
-        replaced = replaced.replaceAll('{{percentage}}', _safeValue(order.percentage));
+        replaced =
+            replaced.replaceAll('{{percentage}}', _safeValue(order.percentage));
         replaced = replaced.replaceAll('{{date}}', _safeValue(order.date));
         replaced = replaced.replaceAll('{{price}}', _safeValue(order.price));
-        replaced = replaced.replaceAll('{{Object}}', _safeValue(order.objectName));
-        replaced = replaced.replaceAll('{{Last}}', _safeValue(order.lastUpdated));
+        replaced =
+            replaced.replaceAll('{{Object}}', _safeValue(order.objectName));
+        replaced =
+            replaced.replaceAll('{{Last}}', _safeValue(order.lastUpdated));
         replaced = replaced.replaceAll('{{url}}', _safeValue(order.url));
+        replaced =
+            replaced.replaceAll('{{reserver}}', _safeValue(order.reserver));
 
         return jsonDecode(replaced) as Map<String, dynamic>;
       }).toList();
@@ -87,15 +92,15 @@ class LineNotifyService {
         } else {
           print('LINE送信エラー: ${response.statusCode} - ${response.body}');
           await GASNotifyService.notifyErrorToGas(
-          "Faital Error in LineNotifyService : \n${response.statusCode}\n${response.body}");
+              "Faital Error in LineNotifyService : \n${response.statusCode}\n${response.body}");
         }
 
         print(jsonEncode(body));
         return response.statusCode.toString();
-      }else{
+      } else {
         return jsonEncode(body);
       }
-    } catch (e,stackTrace) {
+    } catch (e, stackTrace) {
       print('LINEサービス内でエラーが発生しました: $e');
       await GASNotifyService.notifyErrorToGas(
           "Faital Error in AppService: \n $e \n Stack: $stackTrace");

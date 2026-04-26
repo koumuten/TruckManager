@@ -105,6 +105,20 @@
               "contents": [
                 {
                   "type": "text",
+                  "text": "決済者"
+                },
+                {
+                  "type": "text",
+                  "text": "{{reserver}}"
+                }
+              ]
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "contents": [
+                {
+                  "type": "text",
                   "text": "更新"
                 },
                 {
