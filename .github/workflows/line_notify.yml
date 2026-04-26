@@ -19,6 +19,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y poppler-utils zip # zipを追加
 
+      # 1. Node.js 環境をセットアップ
+      - uses: actions/setup-node@v4
+        with:
+          node-byte: 20
+
+      # 2. msdf-bmfont-xml をグローバルにインストール
+      - name: Install msdf-bmfont
+        run: npm install -g msdf-bmfont-xml
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
