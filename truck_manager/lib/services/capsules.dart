@@ -36,6 +36,7 @@ class OrderCapsule {
       'lastUpdated': lastUpdated,
       'url': url,
       'id': id,
+      'reserver': reserver,
     };
   }
 
