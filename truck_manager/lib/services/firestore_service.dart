@@ -44,7 +44,7 @@ class FirestoreService {
   }
 
   Future<List<Map<String, dynamic>>> getAllInvoices() async {
-    final parent = 'projects/$_project/databases/(default)/documents';
+    final parent = 'projects/$_project/databases/truck/documents';
     final response =
         await _api.projects.databases.documents.list(parent, 'invoices');
 
@@ -82,5 +82,54 @@ class FirestoreService {
       }
     }
     return map;
+  }
+
+  Future<Map<String, dynamic>?> getDocument({
+    required String collectionPath,
+    required String docId,
+  }) async {
+    final name = 'projects/$_project/databases/truck/documents/$collectionPath/${docId.replaceAll('/', '-')}';
+
+    try {
+      final document = await _api.projects.databases.documents.get(name);
+      return _convertDocumentToMap(document);
+    } catch (e) {
+      // ドキュメントが見つからない等のエラーハンドリング
+      print('Error getting document: $e');
+      return null;
+    }
+  }
+
+  /// 任意のフィルタを受け取ってクエリを実行する
+  Future<List<Map<String, dynamic>>> queryDocuments({
+    required String collectionId,
+    required Filter filter,
+    int? limit,
+  }) async {
+    final parent = 'projects/$_project/databases/truck/documents';
+
+    final query = RunQueryRequest(
+      structuredQuery: StructuredQuery(
+        from: [CollectionSelector(collectionId: collectionId)],
+        where: filter,
+        limit: limit,
+      ),
+    );
+
+    final List<Map<String, dynamic>> results = [];
+    try {
+      // 引用元：https://pub.dev/documentation/googleapis/latest/firestore/v1/ProjectsDatabasesDocumentsResource/runQuery.html (公式)
+      final List<RunQueryResponseElement> response =
+          await _api.projects.databases.documents.runQuery(query, parent);
+
+      for (var element in response) {
+        if (element.document != null) {
+          results.add(_convertDocumentToMap(element.document!));
+        }
+      }
+    } catch (e) {
+      print('Query execution error: $e');
+    }
+    return results;
   }
 }
