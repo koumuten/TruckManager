@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:googleapis/sheets/v4.dart';
 import 'package:http/http.dart' as http;
 import 'package:truck_manager/services/capsules.dart';
 import 'package:truck_manager/services/asset_loader.dart';
@@ -43,6 +44,18 @@ class LineNotifyService {
       List<Map<String, dynamic>> carouselContents = orders.map((order) {
         String replaced = bubbleBaseStr;
 
+        if (order.lastUpdated == null) {
+          order.lastUpdated = DateTime.now();
+        }
+
+        try {
+          DateTime created = DateTime.parse(order.date);
+          order.date = "${created.month} / ${created.day}";
+        } catch (e, stackTrace) {
+          print(e);
+          GASNotifyService.notifyErrorToGas("faital error : $e \n $stackTrace");
+        }
+
         // OrderCapsule のプロパティを使って、テンプレートの {{変数}} を置換
         // _safeValue を使って空文字を防ぐ
         replaced = replaced.replaceAll('{{State}}', _safeValue(order.state));
@@ -52,8 +65,10 @@ class LineNotifyService {
         replaced = replaced.replaceAll('{{price}}', _safeValue(order.price));
         replaced =
             replaced.replaceAll('{{Object}}', _safeValue(order.objectName));
-        replaced =
-            replaced.replaceAll('{{Last}}', _safeValue(order.lastUpdated));
+        replaced = replaced.replaceAll(
+            '{{Last}}',
+            _safeValue(
+                "${order.lastUpdated!.month}/${order.lastUpdated!.day}"));
         replaced = replaced.replaceAll('{{url}}', _safeValue(order.url));
         replaced =
             replaced.replaceAll('{{reserver}}', _safeValue(order.reserver));

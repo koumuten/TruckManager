@@ -476,6 +476,12 @@
       "languageVersion": "2.17"
     },
     {
+      "name": "uuid",
+      "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/uuid-4.5.3",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
       "name": "vector_math",
       "rootUri": "file:///home/user/.pub-cache/hosted/pub.dev/vector_math-2.2.0",
       "packageUri": "lib/",
@@ -524,7 +530,7 @@
       "languageVersion": "3.0"
     }
   ],
-  "generated": "2026-04-23T23:46:52.121753Z",
+  "generated": "2026-04-26T07:59:52.393464Z",
   "generator": "pub",
   "generatorVersion": "3.1.3"
 }

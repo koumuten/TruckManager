@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:uuid/uuid.dart';
 import 'package:path/path.dart' as path;
 import 'package:truck_manager/services/asset_loader.dart';
 import 'package:truck_manager/services/pdf_service.dart';
@@ -26,6 +27,11 @@ class AppService {
   Future<void> runInvoiceSyncWorkflow() async {
     print('Invoice processing workflow started.');
     try {
+      final tmpDir = await AssetLoader.readAsset('TMP_DIR');
+      final tmp = Directory(tmpDir);
+      if (!(await tmp.exists())) {
+        await tmp.create();
+      }
       final target = await AssetLoader.readAsset("TARGET");
       final messages =
           await _gmail.fetchMessageList('is:unread subject:($target)');
@@ -49,9 +55,8 @@ class AppService {
             final attachmentId = part.body!.attachmentId;
             if (attachmentId == null) continue;
 
-            // 一時ディレクトリを取得
-            final tmpDir = Directory.systemTemp.createTempSync('invoice_pdf_');
-            final pdfFile = File(path.join(tmpDir.path, part.filename!));
+            var uuid = Uuid();
+            final pdfFile = File(path.join(tmpDir, "${uuid.v4()}.pdf"));
 
             try {
               // 添付ファイルを取得して保存
@@ -141,7 +146,6 @@ class AppService {
               }
               order.url = imgUrl;
               await _line.sendOrderNotifications([order]);
-
             } catch (e, stackTrace) {
               print('Error processing attachment for email ${message.id}: $e');
               print(stackTrace);
@@ -149,9 +153,9 @@ class AppService {
                   'Failed to process invoice from email ${message.id}: $e');
             } finally {
               // 一時ファイルをクリーンアップ
-              if (await tmpDir.exists()) {
-                await tmpDir.delete(recursive: true);
-                print('Cleaned up temporary directory: ${tmpDir.path}');
+              if (await tmp.exists()) {
+                await tmp.delete(recursive: true);
+                print('Cleaned up temporary directory: ${tmp.path}');
               }
             }
           }
@@ -189,7 +193,7 @@ class AppService {
             url: invoiceData['imageUrl'] as String? ?? '',
             id: invoiceData['id'] as String? ?? '',
             percentage: invoiceData['percentage'] as String? ?? '',
-            lastUpdated: '',
+            lastUpdated: DateTime.now(),
           );
           lineNotifications.add(notification);
         }

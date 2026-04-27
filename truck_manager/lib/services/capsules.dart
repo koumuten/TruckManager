@@ -10,7 +10,7 @@ class OrderCapsule {
   String date;
   String price;
   String objectName;
-  String lastUpdated;
+  DateTime? lastUpdated;
   String url;
   String reserver;
   final String id;
@@ -21,7 +21,7 @@ class OrderCapsule {
       this.date = '',
       this.price = '',
       this.objectName = '',
-      this.lastUpdated = '',
+      this.lastUpdated = null,
       this.url = '',
       this.id = '',
       this.reserver = ''});
@@ -60,7 +60,7 @@ class OrderCapsule {
         date: invoice.invoiceDate, // 請求書側の発行日を採用
         price: invoice.totalAmount.toString(), // 請求書側の抽出金額を採用
         objectName: shift.eventName, // 運搬タスク側の「練習目的」を採用
-        lastUpdated: "今日",
+        lastUpdated: DateTime.now(),
         reserver: shift.reserver);
   }
 }
@@ -87,18 +87,17 @@ class InvoiceCapsule {
   bool get isExtractionInvalid => totalAmount < 10000;
 
   factory InvoiceCapsule.fromPdfText(String text) {
-    final capsule = InvoiceCapsule();
     final lines = text.split('\n');
+    final capsule = InvoiceCapsule();
 
     // 正規表現のパターン
-    final amountPattern = RegExp(r'((?:[0-9]{1,3},)*[0-9]{1,3})\s*円');
+    final amountPattern = RegExp(r'お支払い総合計.*((?:[0-9]{1,3},)*[0-9]{1,3})\s*円');
     final datePattern =
         RegExp(r'(\d{4})[年|\/|\.](\d{1,2})[月|\/|\.](\d{1,2})日?');
     final invoiceNumPattern = RegExp(r'No\.\s*([A-Z0-9\-]+)');
 
     for (var i = 0; i < lines.length; i++) {
       final line = lines[i].trim();
-
       if (line.contains('請求書')) {
         // 「御中」が含まれる行をクライアント名として扱う
         if (i > 0 && lines[i - 1].contains('御中')) {
@@ -109,10 +108,17 @@ class InvoiceCapsule {
       // 金額の抽出
       final amountMatch = amountPattern.firstMatch(line);
       if (amountMatch != null) {
-        final amountStr = amountMatch.group(1)!.replaceAll(',', '');
-        final amount = int.tryParse(amountStr);
-        if (amount != null && amount > capsule.totalAmount) {
-          capsule.totalAmount = amount;
+        final amountStr = amountMatch.group(0)!.replaceAll(',', '');
+        final priceRegExp = RegExp(r'[0-9][\s\,0-9]*');
+        final priceMatch = priceRegExp.firstMatch(amountStr);
+
+        if (priceMatch != null) {
+          print(priceMatch.group(0)!);
+          final amount =
+              int.tryParse((priceMatch.group(0)!).replaceAll(",", ""));
+          if (amount != null && amount > capsule.totalAmount) {
+            capsule.totalAmount = amount;
+          }
         }
       }
 

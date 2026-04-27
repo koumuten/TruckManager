@@ -15,8 +15,10 @@ class PdfService {
     return PdfService._();
   }
 
-  Future<InvoiceCapsule> ExtractInvoiceCapsule(File sourcePdf) async {
+  Future<InvoiceCapsule> ExtractInvoiceCapsule(File sourcePdf,
+      {int amountBorder = 0}) async {
     // 1. まず pdftotext でテキストを抽出
+    print("${sourcePdf.path}");
     String text = await _extractTextWithPdfToText(sourcePdf);
 
     // 2. 抽出結果から InvoiceCapsule を生成
@@ -25,7 +27,7 @@ class PdfService {
     print("price : ${invoice.totalAmount}");
 
     // 3. 抽出が失敗していたら（金額が0円なら）、Geminiで再挑戦
-    if (invoice.isExtractionInvalid || invoice.totalAmount < 1000) {
+    if (invoice.isExtractionInvalid || invoice.totalAmount < amountBorder) {
       print("pdftotext failed. Retrying with Gemini...");
       text = await _extractTextWithGemini(sourcePdf);
       invoice = InvoiceCapsule.fromPdfText(text);
@@ -154,12 +156,16 @@ class PdfService {
   }
 
   Future<String> _extractTextWithPdfToText(File pdfFile) async {
-    final result = await Process.run('pdftotext', [pdfFile.path, '-']);
+    final result = await Process.run('pdftotext', [pdfFile.path, '-layout']);
     if (result.exitCode != 0) {
       print("pdftotext stderr: ${result.stderr}");
       return "";
     }
-    return result.stdout as String;
+    final fileName = path.basenameWithoutExtension(pdfFile.path);
+    final fileDir = path.dirname(pdfFile.path);
+    final outcomeFilePath = path.join(fileDir, "$fileName.txt");
+    final outcome = await File(outcomeFilePath).readAsString();
+    return outcome;
   }
 
   Future<String> _extractTextWithGemini(File pdfFile) async {
