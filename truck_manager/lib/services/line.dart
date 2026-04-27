@@ -44,9 +44,7 @@ class LineNotifyService {
       List<Map<String, dynamic>> carouselContents = orders.map((order) {
         String replaced = bubbleBaseStr;
 
-        if (order.lastUpdated == null) {
-          order.lastUpdated = DateTime.now();
-        }
+        order.lastUpdated ??= DateTime.now();
 
         try {
           DateTime created = DateTime.parse(order.date);
