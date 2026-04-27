@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:truck_manager/services/color.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path/path.dart' as path;
 import 'package:truck_manager/services/asset_loader.dart';
@@ -11,7 +12,7 @@ import 'package:truck_manager/services/capsules.dart';
 import 'package:truck_manager/services/gdrive_service.dart';
 import 'package:truck_manager/services/mail.dart';
 import 'package:truck_manager/services/spread_sheet.dart';
-import 'package:intl/intl.dart';
+import 'package:googleapis/firestore/v1.dart';
 
 class AppService {
   final PdfService _pdf;
@@ -32,6 +33,10 @@ class AppService {
       if (!(await tmp.exists())) {
         await tmp.create();
       }
+
+      final collectionId = await AssetLoader.readAsset("FIRESTORE_COLLECTION");
+
+      //メールの検索
       final target = await AssetLoader.readAsset("TARGET");
       final messages =
           await _gmail.fetchMessageList('is:unread subject:($target)');
@@ -40,8 +45,9 @@ class AppService {
         return;
       }
 
+      //メール毎に対処
       print('Found ${messages.length} new invoice emails.');
-
+      final orders = <OrderCapsule>[];
       for (final messageMeta in messages) {
         final message = await _gmail.getMessageDetails(messageMeta.id!);
         final payload = message.payload;
@@ -67,8 +73,35 @@ class AppService {
 
               InvoiceCapsule invoice =
                   await _pdf.ExtractInvoiceCapsule(pdfFile);
-              ShiftCapsule shift;
 
+              OrderCapsule order = OrderCapsule(id: uuid.v4());
+              try {
+                print("${invoice.invoiceDate}に対応するドキュメントを取得中...");
+                // PDFから抽出した日付で検索
+                final filter = Filter(
+                  fieldFilter: FieldFilter(
+                    field: FieldReference(fieldPath: 'date'),
+                    op: 'EQUAL',
+                    value: Value(stringValue: invoice.invoiceDate),
+                  ),
+                );
+
+                final existingDocs = await _firestore.queryDocuments(
+                  collectionId: collectionId,
+                  filter: filter,
+                );
+
+                if (existingDocs.isNotEmpty) {
+                  print("既存のOrderCapsuleが見つかりました。復元します。");
+                  // 既存データから復元
+                  order = OrderCapsule.fromJson(existingDocs.first);
+                }
+              } catch (e, stackTrace) {
+                GASNotifyService.notifyErrorToGas(
+                    "faital error in retriving order: $e \n $stackTrace");
+              }
+
+              ShiftCapsule shift;
               try {
                 print("${invoice.invoiceDate}に対応するシフトを取得中...");
                 DateTime date = DateTime.parse(invoice.invoiceDate);
@@ -125,12 +158,12 @@ class AppService {
 
               invoice.invoiceImgPath = imgUrl;
 
-              OrderCapsule order = OrderCapsule.fromAggregatedData(
-                  shift: shift, invoice: invoice, statusState: "unpaid");
+              order.AggregatedData(
+                  shift: shift, invoice: invoice, status: State.unpaid);
 
               await _firestore.saveDocument(
-                collectionPath: 'orders',
-                docId: '${shift.date}',
+                collectionId: collectionId,
+                docId: '${order.id}',
                 data: {
                   ...order.toJson(),
                   'imageUrl': imgUrl,
@@ -145,72 +178,33 @@ class AppService {
                 print('Marked email ${message.id} as read.');
               }
               order.url = imgUrl;
-              await _line.sendOrderNotifications([order]);
+
+              ColorService colService = await ColorService.Create();
+              String? eMail = await _gmail.GetOriginalSender(message.id!);
+              HSL color = await colService.GetColor(eMail);
+              color.L = 0.4;
+              order.BGColor = color.ToRGBSt();
+
+              orders.add(order);
             } catch (e, stackTrace) {
               print('Error processing attachment for email ${message.id}: $e');
               print(stackTrace);
               await GASNotifyService.notifyErrorToGas(
                   'Failed to process invoice from email ${message.id}: $e');
-            } finally {
-              // 一時ファイルをクリーンアップ
-              if (await tmp.exists()) {
-                await tmp.delete(recursive: true);
-                print('Cleaned up temporary directory: ${tmp.path}');
-              }
             }
           }
         }
+      }
+      await _line.sendOrderNotifications(orders);
+      if (await tmp.exists()) {
+        await tmp.delete(recursive: true);
+        print('Cleaned up temporary directory: ${tmp.path}');
       }
     } catch (e, stackTrace) {
       print('An error occurred during the invoice sync workflow: $e');
       print(stackTrace);
       await GASNotifyService.notifyErrorToGas(
           'Critical error in invoice sync workflow: $e');
-    }
-  }
-
-  Future<void> runConsolidateInvoicesForLine() async {
-    // Firestoreから未払いの請求書を取得し、LINE通知用のデータに変換します。
-    print("Checking for unpaid invoices to notify on LINE...");
-
-    try {
-      final allInvoices = await _firestore.getAllInvoices();
-      final currencyFormatter = NumberFormat('¥#,##0', 'ja_JP');
-      final List<OrderCapsule> lineNotifications = [];
-
-      print(allInvoices);
-
-      for (final invoiceData in allInvoices) {
-        // Firestoreに 'paymentState' フィールドがあり、その値が 'unpaid' のものを対象とします。
-        if (invoiceData['paymentState'] == 'unpaid') {
-          final amount = invoiceData['price'] as int? ?? 0;
-
-          final notification = OrderCapsule(
-            state: '未振り込み', // LINEテンプレート用の状態
-            date: invoiceData['date'] as String? ?? '日付不明',
-            price: currencyFormatter.format(amount),
-            objectName: invoiceData['objectName'] as String? ?? '案件名不明',
-            url: invoiceData['imageUrl'] as String? ?? '',
-            id: invoiceData['id'] as String? ?? '',
-            percentage: invoiceData['percentage'] as String? ?? '',
-            lastUpdated: DateTime.now(),
-          );
-          lineNotifications.add(notification);
-        }
-      }
-
-      if (lineNotifications.isNotEmpty) {
-        print('${lineNotifications.length}件の未払い請求書についてLINE通知を送信します。');
-        await _line.sendOrderNotifications(lineNotifications);
-      } else {
-        print("通知対象の未払い請求書はありませんでした。");
-      }
-    } catch (e, stackTrace) {
-      print('LINE通知処理中にエラーが発生しました: $e');
-      print(stackTrace);
-      // エラーを外部に通知する
-      await GASNotifyService.notifyErrorToGas(
-          'runConsolidateInvoicesForLine failed: $e');
     }
   }
 }

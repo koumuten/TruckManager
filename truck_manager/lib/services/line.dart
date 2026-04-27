@@ -56,7 +56,9 @@ class LineNotifyService {
 
         // OrderCapsule のプロパティを使って、テンプレートの {{変数}} を置換
         // _safeValue を使って空文字を防ぐ
-        replaced = replaced.replaceAll('{{State}}', _safeValue(order.state));
+        replaced = replaced.replaceAll('{{State}}', _safeValue(
+          StateJp[order.state]
+        ));
         replaced =
             replaced.replaceAll('{{percentage}}', _safeValue(order.percentage));
         replaced = replaced.replaceAll('{{date}}', _safeValue(order.date));

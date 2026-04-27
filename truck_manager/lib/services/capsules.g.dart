@@ -7,27 +7,42 @@ part of 'capsules.dart';
 // **************************************************************************
 
 OrderCapsule _$OrderCapsuleFromJson(Map<String, dynamic> json) => OrderCapsule(
-      state: json['state'] as String? ?? '',
+      state:
+          $enumDecodeNullable(_$StateEnumMap, json['state']) ?? State.unknown,
       percentage: json['percentage'] as String? ?? '',
       date: json['date'] as String? ?? '',
       price: json['price'] as String? ?? '',
       objectName: json['objectName'] as String? ?? '',
-      lastUpdated: json['lastUpdated'] as String? ?? '',
+      lastUpdated: json['lastUpdated'] == null
+          ? null
+          : DateTime.parse(json['lastUpdated'] as String),
+      BGColor: json['BGColor'] as String? ?? "",
       url: json['url'] as String? ?? '',
       id: json['id'] as String? ?? '',
+      reserver: json['reserver'] as String? ?? '',
     );
 
 Map<String, dynamic> _$OrderCapsuleToJson(OrderCapsule instance) =>
     <String, dynamic>{
-      'state': instance.state,
+      'state': _$StateEnumMap[instance.state]!,
       'percentage': instance.percentage,
       'date': instance.date,
       'price': instance.price,
       'objectName': instance.objectName,
-      'lastUpdated': instance.lastUpdated,
+      'lastUpdated': instance.lastUpdated?.toIso8601String(),
       'url': instance.url,
+      'reserver': instance.reserver,
+      'BGColor': instance.BGColor,
       'id': instance.id,
     };
+
+const _$StateEnumMap = {
+  State.unknown: 'unknown',
+  State.reserved: 'reserved',
+  State.outset: 'outset',
+  State.unpaid: 'unpaid',
+  State.paid: 'paid',
+};
 
 InvoiceCapsule _$InvoiceCapsuleFromJson(Map<String, dynamic> json) =>
     InvoiceCapsule(

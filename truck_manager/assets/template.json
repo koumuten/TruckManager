@@ -47,7 +47,7 @@
               "margin": "sm"
             }
           ],
-          "backgroundColor": "#27ACB2",
+          "backgroundColor": "{{bgColor}}",
           "paddingTop": "19px",
           "paddingAll": "12px",
           "paddingBottom": "16px"

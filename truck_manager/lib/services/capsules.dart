@@ -3,9 +3,19 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'capsules.g.dart';
 
+enum State { unknown, reserved, outset, unpaid, paid }
+
+const StateJp = {
+  State.unknown: "不正な状態",
+  State.reserved: "予約済み",
+  State.outset: "出発済み",
+  State.unpaid: "未払い",
+  State.paid: "支払済み",
+};
+
 @JsonSerializable()
 class OrderCapsule {
-  String state;
+  State state;
   String percentage;
   String date;
   String price;
@@ -13,15 +23,17 @@ class OrderCapsule {
   DateTime? lastUpdated;
   String url;
   String reserver;
+  String BGColor;
   final String id;
 
   OrderCapsule(
-      {this.state = '',
+      {this.state = State.unknown,
       this.percentage = '',
       this.date = '',
       this.price = '',
       this.objectName = '',
       this.lastUpdated = null,
+      this.BGColor = "",
       this.url = '',
       this.id = '',
       this.reserver = ''});
@@ -47,22 +59,18 @@ class OrderCapsule {
   // =================================================================
   // ▼ 明示的なキャスト（ShiftCapsule と InvoiceCapsule から生成） ▼
   // =================================================================
-  factory OrderCapsule.fromAggregatedData({
+  void AggregatedData({
     required ShiftCapsule shift,
     required InvoiceCapsule invoice,
-    required String statusState, // 例: 'unpaid'
+    required State status, // 例: 'unpaid'
   }) {
-    // 英語のステータス文字列を、LINEで表示するための日本語に変換
-    String displayState = statusState == 'unpaid' ? '未振り込み' : statusState;
-
-    return OrderCapsule(
-        state: displayState, // 変換したステータス
-        percentage: "0%", // 未払いなので固定で0%
-        date: invoice.invoiceDate, // 請求書側の発行日を採用
-        price: invoice.totalAmount.toString(), // 請求書側の抽出金額を採用
-        objectName: shift.eventName, // 運搬タスク側の「練習目的」を採用
-        lastUpdated: DateTime.now(),
-        reserver: shift.reserver);
+    this.state = status;
+    this.percentage = "${status.index * 25}%";
+    this.date = invoice.invoiceDate;
+    this.price = invoice.totalAmount.toString();
+    this.objectName = shift.eventName;
+    this.lastUpdated = DateTime.now();
+    this.reserver = shift.reserver;
   }
 }
 

@@ -11,6 +11,7 @@ abstract class GmailService {
   Future<gmail.Message> getMessageDetails(String id);
   Future<List<int>> fetchAttachment(String messageId, String attachmentId);
   Future<void> markAsRead(String id);
+  Future<String?> GetOriginalSender(String id);
 }
 
 /// Gmail API との実際の通信を担うクラス
@@ -102,6 +103,7 @@ class GmailServiceImpl implements GmailService {
   }
 
   /// 転送元（Original Sender）を推定するメソッド
+  @override
   Future<String?> GetOriginalSender(String id) async {
     final message = await getMessageDetails(id);
 

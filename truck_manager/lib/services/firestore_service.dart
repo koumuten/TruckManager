@@ -6,10 +6,11 @@ import 'dart:convert';
 class FirestoreService {
   final FirestoreApi _api;
   final String _project;
+  final String _collection;
 
-  FirestoreService(this._api, this._project);
+  FirestoreService(this._api, this._project, this._collection);
 
-  static Future<FirestoreService> create() async {
+  static Future<FirestoreService> create(String _collection) async {
     String credentialsJson;
     if (await AssetLoader.isDebug()) {
       credentialsJson =
@@ -23,28 +24,45 @@ class FirestoreService {
         credentials, [FirestoreApi.datastoreScope]);
     final project =
         (jsonDecode(credentialsJson) as Map<String, dynamic>)['project_id'];
-    return FirestoreService(FirestoreApi(client), project);
+    return FirestoreService(FirestoreApi(client), project, _collection);
   }
 
   Future<void> saveDocument({
-    required String collectionPath,
+    required String collectionId,
     required String docId,
     required Map<String, dynamic> data,
   }) async {
+    final parent = 'projects/$_project/databases/$_collection/documents';
+    final safeDocId = docId.replaceAll('/', '-');
+    final documentPath = '$collectionId/$safeDocId';
+
+    // 1. メインドキュメントの更新
+    // 引用元：https://pub.dev/documentation/googleapis/latest/firestore/v1/ProjectsDatabasesDocumentsResource/patch.html (公式)
     final document = _createDocumentFromMap(data);
-    final parent = 'projects/$_project/databases/truck/documents';
-    final path = '$parent/$collectionPath';
+    await _api.projects.databases.documents.patch(
+      document,
+      '$parent/$documentPath',
+      updateMask_fieldPaths: data.keys.toList(), // 指定したフィールドのみ更新
+    );
+
+    // 2. 更新履歴の作成
+    final historyData = Map<String, dynamic>.from(data);
+    historyData['updatedAt'] = DateTime.now().toUtc().toIso8601String();
+    final historyDocument = _createDocumentFromMap(historyData);
+
+    // 履歴を保存するサブコレクションの「親」となるパスを指定
+    // 構造: projects/.../documents/コレクション/ドキュメントID
+    final historyParentPath = '$parent/$collectionId/$safeDocId';
 
     await _api.projects.databases.documents.createDocument(
-      document,
-      parent,
-      collectionPath,
-      documentId: docId.replaceAll('/', '-'),
+      historyDocument,
+      historyParentPath,
+      'history',
     );
   }
 
   Future<List<Map<String, dynamic>>> getAllInvoices() async {
-    final parent = 'projects/$_project/databases/truck/documents';
+    final parent = 'projects/$_project/databases/$_collection/documents';
     final response =
         await _api.projects.databases.documents.list(parent, 'invoices');
 
@@ -85,10 +103,11 @@ class FirestoreService {
   }
 
   Future<Map<String, dynamic>?> getDocument({
-    required String collectionPath,
+    required String collectionId,
     required String docId,
   }) async {
-    final name = 'projects/$_project/databases/truck/documents/$collectionPath/${docId.replaceAll('/', '-')}';
+    final name =
+        'projects/$_project/databases/$_collection/documents/$collectionId/${docId.replaceAll('/', '-')}';
 
     try {
       final document = await _api.projects.databases.documents.get(name);
@@ -106,7 +125,7 @@ class FirestoreService {
     required Filter filter,
     int? limit,
   }) async {
-    final parent = 'projects/$_project/databases/truck/documents';
+    final parent = 'projects/$_project/databases/$_collection/documents';
 
     final query = RunQueryRequest(
       structuredQuery: StructuredQuery(
