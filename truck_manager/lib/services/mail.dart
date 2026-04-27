@@ -87,4 +87,35 @@ class GmailServiceImpl implements GmailService {
     final request = gmail.ModifyMessageRequest(removeLabelIds: ['UNREAD']);
     await _api!.users.messages.modify(request, 'me', id);
   }
+
+  /// メッセージのヘッダーから指定した名前の値を抽出する
+  String? GetHeader(gmail.Message message, String name) {
+    // 引用元：https://pub.dev/documentation/googleapis/latest/gmail/v1/MessagePart-class.html (公式)
+    final headers = message.payload?.headers;
+    if (headers == null) return null;
+
+    final header = headers.firstWhere(
+      (h) => h.name?.toLowerCase() == name.toLowerCase(),
+      orElse: () => gmail.MessagePartHeader(),
+    );
+    return header.value;
+  }
+
+  /// 転送元（Original Sender）を推定するメソッド
+  Future<String?> GetOriginalSender(String id) async {
+    final message = await getMessageDetails(id);
+
+    // 1. X-Forwarded-For ヘッダーを確認
+    final forwardedFor = GetHeader(message, 'X-Forwarded-For');
+    if (forwardedFor != null) return forwardedFor;
+
+    // 2. 本文が 'Fwd:' の場合、Return-Path などを確認（憶測：環境により異なる）
+    // 通常の From は転送した人のアドレスになっているため、
+    // 転送設定による転送なら 'X-Forwarded-From' が存在する場合もあります。
+    final forwardedFrom = GetHeader(message, 'X-Forwarded-From');
+    if (forwardedFrom != null) return forwardedFrom;
+
+    // 3. 見つからない場合は通常の From を返すか、null を返す
+    return GetHeader(message, 'From');
+  }
 }
