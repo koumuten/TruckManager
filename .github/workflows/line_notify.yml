@@ -61,3 +61,6 @@ jobs:
           GDRIVE_UPLOAD_FOLDER_ID : ${{ secrets.GDRIVE_UPLOAD_FOLDER_ID }}
           GEMINI_API_KEY : ${{ secrets.GEMINI_API_KEY }}
           PROJECT_ID : ${{ secrets.PROJECT_ID }}
+
+          FIRESTORE_DB_NAME : ${{ secrets.FIRESTORE_DB_NAME }}
+          FIRESTORE_COLLECTION : ${{ secrets.FIRESTORE_COLLECTION }}
