@@ -56,9 +56,8 @@ class LineNotifyService {
 
         // OrderCapsule のプロパティを使って、テンプレートの {{変数}} を置換
         // _safeValue を使って空文字を防ぐ
-        replaced = replaced.replaceAll('{{State}}', _safeValue(
-          StateJp[order.state]
-        ));
+        replaced =
+            replaced.replaceAll('{{State}}', _safeValue(StateJp[order.state]));
         replaced =
             replaced.replaceAll('{{percentage}}', _safeValue(order.percentage));
         replaced = replaced.replaceAll('{{date}}', _safeValue(order.date));
@@ -72,6 +71,8 @@ class LineNotifyService {
         replaced = replaced.replaceAll('{{url}}', _safeValue(order.url));
         replaced =
             replaced.replaceAll('{{reserver}}', _safeValue(order.reserver));
+        replaced =
+            replaced.replaceAll('{{bgColor}}', "#${_safeValue(order.BGColor)}");
 
         return jsonDecode(replaced) as Map<String, dynamic>;
       }).toList();
