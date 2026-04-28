@@ -90,10 +90,10 @@ class HSL {
 
   String ToRGBSt() {
     final tuple = ToRGB();
-    final r = tuple.$1.toRadixString(16);
-    final g = tuple.$2.toRadixString(16);
-    final b = tuple.$3.toRadixString(16);
-    return "($r$g$b)".toUpperCase();
+    final r = tuple.$1.toRadixString(16).padLeft(2, '0');
+    final g = tuple.$2.toRadixString(16).padLeft(2, '0');
+    final b = tuple.$3.toRadixString(16).padLeft(2, '0');
+    return "$r$g$b".toUpperCase();
   }
 }
 
@@ -113,11 +113,12 @@ class ColorService {
     if (mail == null) {
       return color;
     }
+    var username = "";
     //Where mail = $mail
     //https://pub.dev/documentation/googleapis/latest/firestore/v1/FieldFilter-class.html (公式)
     final filter = Filter(
       fieldFilter: FieldFilter(
-        field: FieldReference(fieldPath: 'mail'),
+        field: FieldReference(fieldPath: 'address'),
         op: 'EQUAL',
         value: Value(stringValue: mail),
       ),
@@ -127,6 +128,7 @@ class ColorService {
           collectionId: "user", filter: filter);
       if (docs.isNotEmpty) {
         final firstDoc = docs.first;
+        username = mail;
         color = firstDoc['color'] as String;
       } else {
         final defaultDoc = await _firestoreService.getDocument(
@@ -135,11 +137,13 @@ class ColorService {
         );
         if (defaultDoc != null) {
           color = defaultDoc['color'] as String;
+          username = "dafault";
         }
       }
     } catch (e, stackTrace) {
       GASNotifyService.notifyErrorToGas("faital error : $e \n $stackTrace");
     }
+    print("$username $color");
     return color;
   }
 

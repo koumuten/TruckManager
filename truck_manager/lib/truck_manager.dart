@@ -181,6 +181,9 @@ class AppService {
 
               ColorService colService = await ColorService.Create();
               String? eMail = await _gmail.GetOriginalSender(message.id!);
+              if (eMail != null) {
+                eMail = eMail.split(" ")[0];
+              }
               HSL color = await colService.GetColor(eMail);
               color.L = 0.4;
               order.BGColor = color.ToRGBSt();
@@ -195,7 +198,7 @@ class AppService {
           }
         }
       }
-      await _line.sendOrderNotifications(orders);
+      //await _line.sendOrderNotifications(orders);
       if (await tmp.exists()) {
         await tmp.delete(recursive: true);
         print('Cleaned up temporary directory: ${tmp.path}');

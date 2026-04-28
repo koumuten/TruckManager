@@ -71,6 +71,7 @@ class LineNotifyService {
         replaced = replaced.replaceAll('{{url}}', _safeValue(order.url));
         replaced =
             replaced.replaceAll('{{reserver}}', _safeValue(order.reserver));
+        print("BGColor : #${_safeValue(order.BGColor)}");
         replaced =
             replaced.replaceAll('{{bgColor}}', "#${_safeValue(order.BGColor)}");
 
