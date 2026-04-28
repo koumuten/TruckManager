@@ -1,12 +1,10 @@
 name: Send LINE Notification
 
 on:
+  branches:
+    - main
   schedule:
-    - cron: '0 0 * * *'
-  schedule:
-    - cron: '0 1 * * *'
-  schedule:
-    - cron: '0 12 * * *'
+    - cron: '0 * * * *'
 
 jobs:
   notify:
