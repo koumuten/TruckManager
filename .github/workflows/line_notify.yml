@@ -32,6 +32,13 @@ jobs:
           flutter-version: '3.13.8'
           channel: 'stable'
 
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          workload_identity_provider: '${{ secrets.workLoadId }}'
+          service_account: '${{ secrets.serviceAcount }}'
+
       - name: Run
         run: |
           cd truck_manager
