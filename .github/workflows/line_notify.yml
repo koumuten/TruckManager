@@ -53,7 +53,7 @@ jobs:
           TMP_DIR: ${{ github.workspace }}/tmp
           FONT_DIR: ${{ github.workspace }}/fonts
           CONFIG_DIR: ${{ github.workspace }}/config
-          FONT_URL : ${{ secrets.FONT_URL }}
+          FONT_URL : ${{ vars.FONT_URL }}
 
           OAUTH_ID: ${{ secrets.OAUTH_ID }}
           OAUTH_SECRET: ${{ secrets.OAUTH_SECRET }}
