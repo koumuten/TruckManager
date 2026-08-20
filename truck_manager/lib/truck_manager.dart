@@ -39,7 +39,7 @@ class AppService {
       //メールの検索
       final target = await AssetLoader.readAsset("TARGET");
       final messages =
-          await _gmail.fetchMessageList('is:unread subject:($target)');
+          await _gmail.fetchMessageList('is:unread label:truck-invoice ');
       if (messages.isEmpty) {
         print('No new invoice emails to process.');
         return;
