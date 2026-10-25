@@ -44,6 +44,6 @@ class App {
 
 Future<void> main() async {
   final app = await App.create();
-  //await app.runInvoiceSyncWorkflow();
+  await app.runInvoiceSyncWorkflow();
   await app.runRentACarWorkflow();
 }
