@@ -14,8 +14,10 @@ class LineNotifyService {
   static Future<LineNotifyService> create({String targetId = ''}) async {
     final String channelAccessTokenTmp =
         await AssetLoader.readAsset('LINE_NOTIFY_TOKEN');
-    final String targetUserIdTmp = targetId ?? 
-        await AssetLoader.readAsset('LINE_TARGET_USER_ID');
+    final String targetUserIdTmp = targetId.isEmpty 
+    ? await AssetLoader.readAsset('LINE_TARGET_USER_ID') 
+    : targetId;
+
 
     return LineNotifyService._(channelAccessTokenTmp, targetUserIdTmp);
   }
