@@ -130,7 +130,7 @@ class RentACarWorkflow {
           reserver: parsedData['お名前'] ?? '',
           lastUpdated : DateTime.now(),
           price : '不明',
-          url : "$baseUrl/order/${order.id}",
+          url : "$baseUrl/order/${parsedData['予約番号'] }",
           id : parsedData['予約番号'] ?? '',
         );
         order.percentage = "${order.getPercentageValue()}%";
